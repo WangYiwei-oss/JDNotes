@@ -1,0 +1,42 @@
+<html lang="en">
+<head>
+        <meta charset="UTF-8">
+        <title>注册</title>
+        <link rel="stylesheet" href="/static/CSS/register.css">
+        <script src="/static/JS/jquery-1.10.2.js"></script>
+	<script>
+                $(document).ready(function(){
+                        $("#msg").hide()
+			if("{{.}}"=="该用户已存在"||"{{.}}"=="邮箱格式错误"||"{{.}}"=="两次密码输入不一致"||"{{.}}"=="请输入用户名"||"{{.}}"=="请输入密码"){
+                                $("#msg").show()
+                        }
+                });
+
+        </script>
+</head>
+<body>
+        <div id="header">
+        <a id="mainlogo" href="/index">主LOGO</a>
+        <a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
+        <a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
+        <a class="label2" href="/pages/user/login.html">登陆</a>
+        </div>
+        <div id="welcome"></div>
+        <div id="span01">注册</div>
+        <div id="login">
+        <span id="msg">{{.}}</span>
+        <form action="/register" method="POST">
+                <input class="text1" type="text" name="username" placeholder="请输入昵称">
+                <input class="text2" type="password" name="password" placeholder="请输入密码">
+		<input class="text3" type="password" name="password2" placeholder="请确认密码">
+                <input class="text4" type="text" name="email" placeholder="请输入电子邮箱(非必填)">
+                <input class="text5" type="text" name="number" placeholder="请输入手机号(非必填)">
+                <input class="button1" type="submit" value="注册">
+        </form>
+        <form action="/pages/user/login.html">
+                <input class="button2"type="submit" value="登陆">
+        </form>
+        </div>
+        <div id=span02></div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+*{
+        font-family:"Arial","Microsoft YaHei";
+        text-decoration:none;
+}
+html,body{
+        margin:0px;
+        height:100%;
+}
+#mainlogo{
+        height:35px;
+        width:35px;
+        background-color:yellow;
+        margin-left:20px;
+        margin-right:20px;
+}
+#header{
+        width:100%;
+        height:35px;
+        background-color:#FFF;
+        margin:0px;
+        box-shadow:0px 7px 3px -3px #CCC;
+        line-height:35px;
+}
+.label1{
+        font-size:1.1rem;
+        margin-left:10px;
+        margin-right:10px;
+}
+.label2{
+        font-size:1.1rem;
+        float:right;
+        margin-right:20px;
+        margin-left:10px;
+}
+#welcome{
+        margin-top:8px;
+        height:100px;
+        background-color:pink;
+}
+#span01{
+        margin-top:20px;
+        padding:0 10px 0;
+        line-height:2px;
+        text-align:center;
+        border-left:400px solid #ddd;
+        border-right:400px solid #ddd;
+        font-size:1.7rem;
+        font-weight:bold;
+}
+#login{
+        position:relative;
+        left:34%;
+        margin-top:30px;
+        height:40%;
+        width:30%;
+}
+.text1{
+        position:absolute;
+        top:2rem;
+        width:100%;
+
+}
+.text2{
+        position:absolute;
+        top:5rem;
+        width:100%;
+}
+.text3{
+        position:absolute;
+        top:8rem;
+        width:100%;
+}
+.text4{
+        position:absolute;
+        top:11rem;
+        width:100%;
+}
+.text5{
+        position:absolute;
+        top:14rem;
+        width:100%;
+}
+.button1{
+        position:absolute;
+        top:17rem;
+        width:40%;
+}
+.button2{
+        position:absolute;
+        top:17rem;
+        left:60%;
+        width:40%;
+}
+#span02{
+        margin-top:10px;
+        height:0px;
+        border:1px solid #ddd;
+
+}
+#msg{
+        font-size:0.8rem;
+        color:red;
+}

@@ -3,25 +3,38 @@
 <head>
 	<meta charset="UTF-8">
 	<title>登陆</title>
+	<link rel="stylesheet" href="/static/CSS/login.css">
+	<script src="/static/JS/jquery-1.10.2.js"></script>
+	<script>
+		$(document).ready(function(){
+			$("#msg").hide()
+			if("{{.}}"=="用户名或密码错误"){
+				$("#msg").show()
+			}
+		});
+		
+	</script>
 </head>
 <body>
-	<div>
-	<a href="/pages/index.html">返回主页</a>
-	<a href="/pages/user/register.html">注册</a>
+	<div id="header">
+	<a id="mainlogo" href="/index">主LOGO</a>
+	<a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
+	<a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
+	<a class="label2" href="/pages/user/register.html">注册</a>
 	</div>
-	<div>
-	<p>图片</p>
-	</div>
-	<div>
-	<span>{{.}}</span>
+	<div id="welcome"></div>
+	<div id="span01">登陆</div>
+	<div id="login">
+	<span id="msg">{{.}}</span>
 	<form action="/login" method="POST">
-		<input type="text" name="username" placeholder="请输入昵称">
-		<input type="password" name="password" placeholder="请输入密码">
-		<input type="submit" value="登陆">
+		<input class="text1" type="text" name="username" placeholder="请输入昵称">
+		<input class="text2" type="password" name="password" placeholder="请输入密码">
+		<input class="button1" type="submit" value="登陆">
 	</form>
-	<form action="/register">
-		<input type="submit" value="注册">
+	<form action="/pages/user/register.html">
+		<input class="button2"type="submit" value="注册">
 	</form>
 	</div>
+	<div id=span02></div>
 </body>
 </html>

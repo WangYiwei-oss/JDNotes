@@ -22,6 +22,7 @@ func main() {
 	http.Handle("/notes/", http.StripPrefix("/notes/", http.FileServer(http.Dir("views/notes/"))))
 	http.HandleFunc("/index", index)
 	http.HandleFunc("/login", controller.Login)
+	http.HandleFunc("/register", controller.Register)
 	fmt.Println("Ip:0.0.0.0\nPort:8080")
 	http.ListenAndServe(":8080", nil)
 }
