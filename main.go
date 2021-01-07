@@ -1,6 +1,7 @@
 package main
 
 import (
+	"./controller"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -20,6 +21,7 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("views/static/"))))
 	http.Handle("/notes/", http.StripPrefix("/notes/", http.FileServer(http.Dir("views/notes/"))))
 	http.HandleFunc("/index", index)
+	http.HandleFunc("/login", controller.Login)
 	fmt.Println("Ip:0.0.0.0\nPort:8080")
 	http.ListenAndServe(":8080", nil)
 }
