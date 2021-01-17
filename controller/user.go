@@ -50,3 +50,37 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	user.InsertIntoSql()
 	model.WriteTemplate(w, "views/pages/user/register_success.html", user.Username)
 }
+
+func CheckUsername(w http.ResponseWriter, r *http.Request) {
+	user := model.User{}
+	user.Username = r.PostFormValue("username")
+	user.SelectByUsername()
+	if user.Id > 0 {
+		w.Write([]byte("用户名已存在"))
+	} else {
+		w.Write([]byte("<font style='color:green'>用户名可用</font>"))
+	}
+}
+func CheckPassword(w http.ResponseWriter, r *http.Request) {
+	user := model.User{}
+	user.Password = r.PostFormValue("password")
+	password2 := r.PostFormValue("password2")
+	if user.Password == password2 {
+		if user.CheckPassword() {
+			w.Write([]byte("true"))
+		} else {
+			w.Write([]byte("密码强度太低，必须包含英文和数字"))
+		}
+	} else {
+		w.Write([]byte("两次密码输入不一致"))
+	}
+}
+func CheckEmail(w http.ResponseWriter, r *http.Request) {
+	user := model.User{}
+	user.Email = r.PostFormValue("email")
+	if user.CheckEmailFormat() {
+		w.Write([]byte("true"))
+	} else {
+		w.Write([]byte("邮箱格式不正确"))
+	}
+}
