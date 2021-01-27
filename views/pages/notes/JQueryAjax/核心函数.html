@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+	<script src="./jquery-1.10.1.js"></script>
+	<script>
+		//$();就代表调用jquery的核心函数
+		//1. $();可以接收一个函数
+		$(function(){
+			alert("hello jq")
+			//2. $();可以接收一个字符串，返回jquery对象
+               	 	//2.1 接收一个字符串选择器
+			var box1=$(".box1");
+			var box2=$("#box2");
+			console.log(box1);
+			console.log(box2);
+        	        //2.2 接收一个代码片段
+			var p=$("<p>我是段落</p>");
+			console.log(p);
+			//会根据代码片段创建一个DOM元素，就可以利用这个DOM元素做一些事情
+			box1.append(p);
+   	             	//3. 接收一个DOM元素,其实会被包装成jquery对象。
+			var span=document.getElementsByTagName("span")[0];
+			var span2=$(span);
+			console.log(span2);
+		});
+	</script>
+</head>
+<body>
+	<div class="box1"></div>
+	<div id="box2"></div>
+	<span></span>
+</body>
+</html>

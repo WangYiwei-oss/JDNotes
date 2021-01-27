@@ -1,0 +1,196 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>数据类型</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>基本数据类型</h1>
+	<p>毫无疑问，在计算机底层全是位(bit)，而实际操作则是基于大小固定的单元格中的数值，称为字(word)，这些字可以解释为整数，浮点，位集(bitset)内存地址等。并进而构成更加庞大的数据类型。</p>
+	<p>go语言提供了很多数据类型，除了基本的整形，浮点，字符串，字符，布尔以外。还有数组，切片（slice），字典（map），通道（channel），函数，结构体等</p>
+	<p>go语言中的数据类型分为四大类：</p>
+	<ol>
+		<li>基础类型(basic type)</li>
+		<li>聚合类型(aggregate type)</li>
+		<li>引用类型(reference type)</li>
+		<li>接口类型(interface type)</li>
+	</ol>
+	<h3>1. 基本数据类型(basic type)</h3>
+	<p>go语言提供了四种基本的数据类型，整形，浮点，布尔，字符串</p>
+	<h2>整形</h2>
+	<h3>一般整形</h3>
+	<p>go语言提供了多种整形，并且形式上非常好辨认</p>
+	<table>
+		<thead>
+		<tr>
+			<td>类型</td><td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>int8</td>
+			<td>8位整形，就是c中的byte类型</td>
+		</tr>
+		<tr>
+			<td>int16</td>
+			<td>16位整形，就是c中的short类型</td>
+		</tr>
+		<tr>
+			<td>int32</td>
+			<td>32位整形，就是c中的int, long类型(32位系统)</td>
+		</tr>
+		<tr>
+			<td>int64</td>
+			<td>64位整形，就是c中的long long, long(64位系统)</td>
+		</tr>
+
+	</table>
+	<p>此外还有相应的无符号整形，就是前面加上u，比如uint8</p>
+	<h3>特殊整形</h3>
+	<p>特殊整形有int和uint，到底是选取8,16,32,64取决于相应的平台上运算效率最高的值。比如在32位系统上很有可能就是int32,在64位系统上很可能就是int64</p>
+	<p><strong>tips: go中有一个表示unicode码点的类型叫做rune类型，其实就是int32。同样有byte类型其实就是int8，强调一个值是原始数据而非量值</strong></p>
+	<p>最后还有一种无符号整数uintptr，其大小不明确，但是保证可以完整存放一个指针</p>
+	<p>go语言中是强类型语言，类型必须精确匹配，所以如果int32+int64就会报错，必须显式类型转换。对于类型T，其类型转换函数为T()</p>
+	<p>go语言中不能直接定义二进制数，可以直接定义八进制和十六进制，八进制用0开头，十六进制用0x开头</p>
+	<h2>浮点型</h2>
+	<p>go语言提供两种浮点类型float32和float64。也就是c语言中的float和double</p>
+	<p>go语言还提供了复数类型complex64和complex128,complex64就是实部虚部都是float32，使用全局函数real()和imag()可以得到一个复数的实部和虚部</p>
+	<h2>布尔值</h2>
+	<p>bool类型，有且只允许有true和false两个值，不允许将整数转换成bool值，bool值也不能参与数值运算</p>
+	<h2>字符串</h2>
+	<p>字符串是不可变的字节序列，它可以包含任何数据</p>
+	<h3>UTF-8编码</h3>
+	<p>首先需要说明一下，go语言的字符串编码解码都是按照UTF-8的编码。那么什么是UTF-8编码呢？</p>
+	<p>在早期的计算机行业，大家只使用英语，而英语只有26个字母，再加上一些标点符号和特殊符号也没几个，所以使用7位、128个字符就完全够用了。使用7位编码的方式就是大名鼎鼎的ASCII码。用的数据结构就是int8，也就是go中的byte类型啦<br/>
+	但是随着互联网的兴起，就需要能够应付很多不同的语言，就诞生了Unicode，它使用33位来编码，在第八版的Unicode中就定义了12万个码点，包括了超过100多种语言。所用的数据结构就是int32，也就是go中的rune类型。但是Unicode有一个很大的问题，大部分的面向计算机的文本还都是ASCII码中的那一点，常用语言的文字用int16也足够表示了，那么全都用int32表示会造成空间的极大浪费<br/>
+	到目前为止，最通用的解决方法就是使用UTF-8编码，UTF-8以字节为单位对Unicode码点作变长编码。每个文本字符用1-4个字节表示。一个文字符号编码的首字节的高位指明了后面还有多少字节。若最高位是0表示是一个ASCII码。若是110则占两个字符，第二个字节以10开始，更长的编码以此类推。
+	</p>
+	<p>使用UTF-8编码会有一个缺点就是无法直接按下标来访问第n个字符，就比如说：</p>
+	<p>
+<pre class="codepre">
+a := "abc"
+b := "李狗蛋"
+fmt.Println(len(a))	//输出3
+fmt.Println(len(b))	//输出9
+fmt.Printf("%s\n",a[0:1])  //输出a
+fmt.Printf("%s\n",b[0:1])  //输出乱码
+fmt.Printf("%s\n",b[0:3])  //输出李
+</pre>
+	</p>
+	<p>可以看到一个英文字符占一个byte。而一个中文字符占3个byte</p>
+	<p>然而UTF-8编码也有很多好处，编码紧凑，兼容ASCII，自同步（最多追溯三个字节就能定位一个字符的起始位置），查找字符不需要考虑前文内容。像C++字符串最后会有一个\0来表示字符串结束(NUL值)，而UTF-8则不需要嵌入NUL值。</p>
+	<p>由于UTF-8良好的特性，使得无需解码，直接比较bit就可以直接判断某个字符串是否是另一个字符串的前缀和后缀，或是字符串是否相等。这种例子还有很多。</p>
+	<h3>逐字符操作</h3>
+	<p>前面说道UTF-8是无法逐字符操作的，那如果需要逐字符操作怎么办呢？</p>
+	<h4>使用for range</h4>
+	<p>go语言中对string使用for range操作是会按每个字符去选取的，比如：</p>
+	<p>
+<pre class="codepre">
+a := "abc,李狗蛋"
+n := 0
+for _, b := range a {
+	n++
+        fmt.Printf("%q\n", b)
+}
+fmt.Println("len为：", len(a), "n为：", n)
+
+输出为：
+'a'
+'b'
+'c'
+','
+'李'
+'狗'
+'蛋'
+len为： 13 n为： 7
+</pre>
+	</p>
+	<p>可以看到使用for range的时候会按隐式解码的方式给我们一个字符</p>
+	<h4>使用unicode/utf8包中的函数DecodeRuneInString</h4>
+	<p>字面意思就是对string解码，返回一个rune，用法为：</p>
+	<p>
+<pre class="codepre">
+s := "abc,李狗蛋"
+fmt.Println(utf8.RuneCountInString(s))
+for i := 0; i &lt len(s); {
+        r, size := utf8.DecodeRuneInString(s[i:])
+        fmt.Printf("字符为：%q 字符所占字节为：%d\n", r, size)
+        i += size
+}
+
+输出结果为：
+7
+字符为：'a' 字符所占字节为：1
+字符为：'b' 字符所占字节为：1
+字符为：'c' 字符所占字节为：1
+字符为：',' 字符所占字节为：1
+字符为：'李' 字符所占字节为：3
+字符为：'狗' 字符所占字节为：3
+字符为：'蛋' 字符所占字节为：3
+</pre>
+	</p>
+	<p>可以看到通过手动对string解码，也得到了每一个对应的字符</p>
+	<p>这里还是需要强调一下字符串是<strong>不可变的</strong>，不可变意味着多个字符串可以安全地共用同一段底层内存，使得复制任何长度字符串的开销都能降低。类似的，字符串和切片都可以安全地共用数据，生成字串的开销也很廉价。这两种情况都没有分配新的内存</p>
+<p>那如果想要更改字符怎么办呢？必须先强制转换成[]rune或者[]byte类型，改完之后再转回string。无论是哪种转换都会伴随着重新分配内存并复制字节数组，比如说：</p>
+<p>
+<pre class="codepre">
+s := "abc,李狗蛋"
+b := []rune(s)
+fmt.Println(len(b))
+b[0] = 'X'
+b[4] = '王'
+fmt.Println(string(b))
+
+输出为：
+7
+Xbc,王狗蛋
+</pre>
+</p>
+<p>可以发现强转为[]rune后，切片长度为7,也就是说当[]rune转换作用于UTF-8编码的字符串时，返回该字符串的Unicode码点序列。此时就可以修改啦</p>
+<h3>常见的字符串操作：</h3>
+<p>go语言支持带格式的原生字符串字面值，用``引起来，里面的字符串会带格式</p>
+<table>
+	<thead>
+	<tr>
+		<td>方法</td>
+		<td>介绍</td>
+	</tr>
+	</thead>
+	<tr>
+		<td>len(str)</td>
+		<td>求长度</td>
+	</tr>
+	<tr>
+		<td>+或fmt.Sprintf</td>
+		<td>拼接字符串</td>
+	</tr>
+	<tr>
+		<td>strings.Split()</td>
+		<td>分割</td>
+	</tr>
+	<tr>
+		<td>strings.Contains()</td>
+		<td>是否包含</td>
+	</tr>
+	<tr>
+		<td>strings.HasPrefix()/strings.HasSuffix()</td>
+		<td>前缀/后缀判断，就是判断是否以什么开头</td>
+	</tr>
+	<tr>
+		<td>strings.Index()/strings.LastIndex()</td>
+		<td>子串出现的位置</td>
+	</tr>
+	<tr>
+		<td>strings.Join(a[]string,sep string)</td>
+		<td>join操作</td>
+	</tr>
+</table>
+<p>与字符串相关的操作有四个标准包特别重要：bytes、strings、strconv和unicode</p>
+<p>strings包提供了很多用于搜索、替换、比较、修整、切分和连接的操作<br/>
+bytes包也有类似的函数，用于操作[]byte<br/>
+strconv包主要用字符串和布尔、整数、浮点数的转换<br/>
+unicode包有判别文字符号值特性的函数，如IsDigit、IsLetter、IsUpper等<br/>
+</p>
+</body>
+</html>

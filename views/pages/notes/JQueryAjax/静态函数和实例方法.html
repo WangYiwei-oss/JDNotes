@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+	<script src="./jquery-1.10.1.js"></script>
+	<script>
+		//定义一个类
+		function AClass(){
+			
+		}
+		//给类添加一个静态方法
+		AClass.staticMethod=function(){
+			console.log("静态方法");
+		}
+		//通过类名调用静态方法
+		AClass.staticMethod();
+		AClass.prototype.instanceMethod=function(){
+			console.log("实例方法")
+		}
+		//创建一个实例
+		var aclass=new AClass();
+		aclass.instanceMethod();
+		$(function(){
+			//静态方法：直接添加到类上面的。通过类名调用
+			//实例方法：添加到类的原型上面的。通过实例调用
+
+			//1. each()方法
+			$("div").each(function(index,value){
+				console.log("each",index,value);
+			});
+			var obj={0:"a",1:"b",2:"c"};
+			$.each(obj,function(index,value){
+				console.log("each",index,value);
+			});
+			//2. map()方法
+			$("div").map(function(index,value){
+				console.log("map",index,value);
+			});
+			$.map(obj,function(index,value){
+				console.log("map",index,value);
+				//在回调函数中返回
+				return index+1;
+			});
+			//jquery中的each和map静态方法的区别是：each有默认返回值，map没有。map支持回调函数中通过return对遍历的数组进行处理并返回，each不支持
+			//jquery中的其他静态方法
+			//定义一个左右都有空格的字符串
+			var str="    l nj    ";
+			console.log(str);
+			//trim方法可以去除左右两端的空格
+			str=$.trim(str);
+			console.log(str);
+			//isWindow方法可以判断传入对象是否是window对象
+			//isArray方法可以判断是否是数组
+			//isFunction方法可以判断是否是函数
+			var f=function(){};
+			console.log($.isFunction(f));
+		});
+	</script>
+</head>
+<body>
+	<div>div1</div>
+	<div>div2</div>
+	<div>div3</div>
+</body>
+</html>

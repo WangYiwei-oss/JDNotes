@@ -1,0 +1,177 @@
+<!-->Docker<-->
+<!-->Docker基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Dockerfile</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Dockerfile</h1>
+	<p>想要制作一个Docker镜像，有两种方法：
+<ul>
+	<li>docker commit</li>
+	<li>Dockerfile</li>
+</ul>
+	</p>
+	<p>所以说，Dockerfile是一种制作自定义镜像的方法</p>
+	<h2>Dockerfile的基本规则</h2>
+	<ul>
+		<li>格式：
+			<ul>
+				<li>#为注释</li>
+				<li>指令(大写)内容(小写)</li>
+				<li>指令其实是大小写不敏感的，但是还是建议用大写</li>
+			</ul>
+		</li>
+		<li>Docker是按顺序依次执行Dockerfile的指令的，所以指令顺序不同结果可能差别很大</li>
+		<li>每一个Dockerfile的非注释行指令，必须是FROM指令，用于为镜像文件构建过程中指定基准镜像，后续的指令运行于此基准镜像所提供的运行环境中</li>
+	</ul>
+	<p>Dockerfile有四组核心的指令：</p>
+	<ul>
+		<li>USER/WORKDIR</li>
+		<li>ADD/EXPOSE</li>
+		<li>RUN/ENV</li>
+		<li>CMD/ENTRYPOINT</li>
+	</ul>
+	<h2>USER/WORKDIR</h2>
+	<p>USER指令是用来指定容器执行程序的用户身份，默认是root用户。可通过USER来指定。在docker run的时候也可以通过-u来覆盖</p>
+	<p>WORKDIR指令用于指定容器的一个目录，容器启动时执行的命令会在该目录下执行，相当于设置了容器的工作目录,类似于cd命令</p>
+	<p>来看一个实例：
+<pre class="codepre">
+vim一个Dockerfile:
+
+FROM nginx:v1
+USER nginx
+WORKDIR /usr/share/nginx/html
+
+使用命令构建镜像:
+docker build . -t nginx:v1.1
+运行结果为：
+Sending build context to Docker daemon  317.4kB
+Step 1/3 : FROM nginx:v1
+ ---&gt f35646e83998
+Step 2/3 : USER nginx
+ ---&gt Running in 1e2d7e239813
+Removing intermediate container 1e2d7e239813
+ ---&gt 4aa0606f9601
+Step 3/3 : WORKDIR /usr/share/nginx/html
+ ---&gt Running in 905b4d31f12e
+Removing intermediate container 905b4d31f12e
+ ---&gt 4f2fe15b87fa
+Successfully built 4f2fe15b87fa
+Successfully tagged nginx:v1.1
+
+使用命令运行容器：
+docker run --rm -it nginx:v1.1 /bin/sh
+
+进入容器的命令行检查当前用户和当前目录，就懂了：
+$ whoami
+nginx
+$ pwd
+/usr/share/nginx/html
+</pre>
+	</p>
+	<p>docker build命令 . 表示构建当前目录的Dockerfile,注意Dockerfile必须叫Dockerfile，大小写敏感。然后-t 镜像名&amp表示创建的镜像的名字，我这里起名叫nginx:v1.1</p>
+	<p>运行时关联终端，然后运行whoami和pwd看当前用户和当前目录，USER和WORKDIR的作用一目了然。</p>
+	<h2>ADD/EXPOSE</h2>
+	<p>ADD指令就是把宿主机的文件拷贝到镜像中，有一个很相似的命令是COPY指令。但是ADD有两个COPY没有的功能，就是ADD可以传入URL，从url拷贝文件到镜像中。还有就是能解压缩文件并把它们添加到镜像中</p>
+	<p>EXPOSE指令就是指定容器要暴露的端口,暴露的是容器的端口。会把容器的端口随机映射到宿主机的一个随机端口号</p>
+	<p>来看一个实例：
+<pre class="codepre">
+FROM nginx
+ADD index.html /usr/share/nginx/html
+EXPOSE 80
+
+使用命令构建镜像:
+docker build . -t nginx:v1.1
+
+运行镜像:
+docker --rm -d -P nginx:v1.1
+注意这里的新的参数-P,表示暴露端口，不加的话不会暴露指定的端口
+
+查看宿主机的网络状态：
+sudo netstat -luntp
+可以看到一个docker proxy（docker代理）
+tcp6       0      0 :::32770                :::*                    LISTEN      73417/docker-proxy
+那我们就得知了随机映射的端口号是32770，那么再去浏览器输入127.0.0.1:32770
+就可以看到我们ADD进入的那个界面啦
+</pre>
+	</p>
+	<h2>RUN/ENV</h2>
+	<p>RUN就是指定容器生成后要执行的指令，比如apt-get啥的</p>
+	<p>ENV就是指定环境变量</p>
+	<p>来看一个实例：
+<pre class="codepre">
+FROM ubuntu
+ENV WALA /usr/share/
+RUN echo $WALA
+
+构造镜像：
+docker build . -t ubuntu:v1
+
+运行结果为：
+Sending build context to Docker daemon  322.6kB
+Step 1/3 : FROM ubuntu
+ ---&lt 9140108b62dc
+Step 2/3 : ENV WALA /usr/share/
+ ---&lt Running in da568f60b995
+Removing intermediate container da568f60b995
+ ---&lt 8228a3bc70d2
+Step 3/3 : RUN echo $WALA
+ ---&lt Running in fcd5a88fdaea
+/usr/share/
+Removing intermediate container fcd5a88fdaea
+ ---&lt 1303437250e4
+Successfully built 1303437250e4
+Successfully tagged ubuntu:v1
+</pre>
+	</p>
+	<p>可以看到在第三步的时候执行了echo $WALA，并且把我们设置的环境变量打印出来了</p>
+	<h2>CMD/ENTRYPOINT</h2>
+	<p>CMD也是执行命令，但是与RUN执行的时机不一样，RUN是docker build的时候执行的，CMD是docker run的时候执行的。</p>
+	<p>ENTRYPOINT也是执行命令，也是docker run的时候执行命令。但是与CMD不同的是，CMD是指定了一个默认的执行命令，而有ENTRYPOINT的时候就会覆盖CMD。但是不是这时候CMD就没什么用了呢？也不是。CMD还可以为ENTRYPOINT传参</p>
+	<p>举个栗子：
+<pre class="codepre">
+FROM ubuntu
+CMD /bin/echo i am a pangzi
+
+构建镜像并run起来，输出为：(注意CMD跟RUN指令执行时机的不同)
+i am a pangzi
+
+但我的Dockerfile如果为：
+FROM ubuntu
+CMD /bin/echo i am a pangzi
+ENTRYPOINT /bin/echo i am a shouzi
+
+再构建镜像并run，输出结果为：
+i am a shouzi
+可以看到CMD指令被"覆盖"了
+</pre>
+	</p>
+	<p>CMD有三种用法：</p>
+	<ol>
+		<li>CMD ["executable","param1","param2"]</li>
+		<li>CMD ["param1","param2"]</li>
+		<li>CMD command param1 param2</li>
+	</ol>
+	<p>第一种用法其实跟第三种目前来看其实没什么不同，就是把参数和命令分开写了。官方推荐第一种写法。第二种写法可以看到，没有可执行命令，那就是上面提到的要给ENTRYPOINT传参数了</p>
+	<p>先看一下ENTRYPOINT的用法，有三种：</p>
+	<ol>
+		<li>ENTRYPOINT ["executable","param1","param2"]</li>
+		<li>ENTRYPOINT command param1 param2</li>
+	</ol>
+	<p>第二种跟CMD用法一样（是没有办法接收CMD的参数的）。第一种就是只提供了可执行命令，但是没有提供参数或只提供了一部分参数，那这时的参数就要由CMD的第二种写法来提供</p>
+	<p>来看一个栗子:
+<pre class="codepre">
+FROM ubuntu
+CMD ["i am a pangzi","i am a shouzi"]
+ENTRYPOINT ["/bin/echo","i am a shazi"]
+
+构建，运行，输出结果为：
+i am a shazi i am a pangzi i am a shouzi
+可以看到CMD的参数拼接到了ENTRYPOINT的参数的后面。当然ENTRYPOINT也可以没有参数就不演示了
+</pre>
+	</p>
+</body>
+</html>

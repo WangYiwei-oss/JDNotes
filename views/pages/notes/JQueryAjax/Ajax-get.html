@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+	<script>
+		//什么是Ajax？是一种前端技术。用来与服务器交换数据并更新部分网页的技术，在不重新加载整个页面的情况下 
+		window.onload=function(ev){
+			var oBtn=document.querySelector("button");
+			oBtn.onclick=function(ev1){
+				//使用Ajax的步骤：
+				//1. 创建一个异步对象
+				var xmlhttp=new XMLHttpRequest();
+				//2. 设置请求方式和请求地址
+				xmlhttp.open("GET","/ajaxtest1",true);
+				//3. 发送请求
+				xmlhttp.send();
+				//4. 监听状态的变化
+				xmlhttp.onreadystatechange=function(ev2){
+					if(xmlhttp.readyState===4){
+						if(xmlhttp.status>=200&&xmlhttp.status<300||xmlhttp.status===304){
+						//5.处理返回结果
+						console.log("接受到服务器返回的数据")
+						}else{
+						console.log("没有接收到数据")
+						}
+					}
+				}
+			}
+		}
+	</script>
+</head>
+<body>
+	<button>发送请求</button>
+</body>
+</html>

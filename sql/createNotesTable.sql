@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS notes
+(
+	id MEDIUMINT UNSIGNED NOT NULL,
+	title VARCHAR(50) NOT NULL,
+	modtime TIMESTAMP NOT NULL,
+	filepath VARCHAR(100) NOT NULL DEFAULT "views/pages/defaultNotes.html",
+	firstclass VARCHAR(20) NOT NULL DEFAULT "其他",
+	secondclass VARCHAR(20) NULL,
+	thirdclass VARCHAR(20) NULL,
+	FOREIGN KEY(id) REFERENCES users(id)
+)ENGINE=InnoDB;

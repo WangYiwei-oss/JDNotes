@@ -1,0 +1,136 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>方法和接收者</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>方法和接收者</h1>
+	<h2>方法声明</h2>
+	<p>在OOP(面向对象编程)中，对象就是简单的一个值或者变量并且拥有其方法。cpp中叫做成员函数。其实就是只有某个对象才可以调用的函数。</p>
+	<p>Go语言中struct里面是不能放函数的。必须用接收者来实现方法</p>
+	<p>Go语言中的方法(Method)是一种作用于特定类型变量的函数，这种特定类型的变量叫做接收者(Receiver)，接收者就类似于其他语言中的this或__self</p>
+	<p>Go的类型想要一个成员函数。就要先写一个普通的函数，然后指定谁可以调用这个函数(接收者)</p>
+	<p>我们还记得普通函数的声明:
+<pre class="definepre">
+func 函数名(参数列表)(返回值列表){}
+</pre>
+	</p>
+	<p>接收者的声明写在函数名前面：
+<pre class="definepre">
+func (接收者列表)函数名(参数列表)(返回值列表){}
+</pre>
+	</p>
+	<p>不允许本身是指针的类型进行方法声明，比如说：
+<pre class="codepre">
+type P *int
+func (a P)f(){}		//会报错
+</pre>
+	</p>
+	<p>如果成功指定了接收者，比如func (a person)add(){}<br/>
+	那么这里的接收者a就类似于this了(但是不是指针，想要指针要显示定义)，那么在函数里面就可以通过a.来修改成员变量
+	</p>
+	<p>
+<pre class="codepre">
+package main
+
+import "fmt"
+
+type people struct {
+        name string
+        age  int
+}
+
+func (p people) cname(n string) {
+        p.name = n
+}
+
+func (p *people) cname1(n string) {
+        p.name = n
+}
+
+func main() {
+        var a people
+        fmt.Println(a)
+        a.cname("王二")
+        fmt.Println(a)
+        a.cname1("张三")
+        fmt.Println(a)
+
+}
+
+运行结果为：
+{ 0}
+{ 0}
+{张三 0}
+</pre>
+	</p>
+	<p>可以看到通过.运算符，像是访问成员变量一样访问了方法,并且注意到有一个语法糖就是a.cname1完整写应该是(&ampa).cname1</p>
+	<h2>nil是一个合法的接收者</h2>
+	<p>nil是一个合法的接收者，尤其当nil是类型中有意义的零值(map,slice)时更是如此。比如说求链表的所有元素和，如果头节点为空，或next为空指针，应该返回零：</p>
+	<p>
+<pre class="codepre">
+package main
+
+import "fmt"
+
+type ListNode struct {
+        value int
+        next  *ListNode
+}
+
+func (l *ListNode) Sum() int {
+        if l == nil {
+                return 0
+        }
+        return l.value + l.next.Sum()
+}
+
+func main() {
+        var head ListNode
+	head.value = 1
+        fmt.Println(head.Sum())
+	
+}
+</pre>
+	</p>
+	<p>可以看到递归到最后一个节点，发现next为nil，就返回了0。如果没有这一句的话，会panic</p>
+	<p>panic: runtime error: invalid memory address or nil pointer dereference</p>
+	<p>如果有类的嵌套，也可以省略详细的调用过程，直接用最外层的类调用</p>
+	<h2>方法变量与表达式</h2>
+	<p>方法和普通函数一样,都可以定义一个成一个变量,函数变量和方法变量，比如说：
+<pre class="codepre">
+package main
+
+import "fmt"
+
+type ListNode struct {
+        value int
+        next  *ListNode
+}
+
+func (l *ListNode) Sum() int {
+        if l == nil {
+                return 0
+        }
+        return l.value + l.next.Sum()
+}
+
+func get(l ListNode) int {
+        return l.value
+}
+
+func main() {
+        var head ListNode
+        head.value = 1
+        a := get	//函数变量
+        b := head.Sum	//方法变量
+        fmt.Println(a(head))	//通过函数变量调用函数
+        fmt.Println(b())	//通过方法变量调用head的方法
+}
+</pre>
+	</p>
+</body>
+</html>

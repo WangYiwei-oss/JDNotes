@@ -1,0 +1,132 @@
+<!-->Docker<-->
+<!-->Docker基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Docker基本操作</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Docker容器的基本操作</h1>
+	<h3>查看容器</h3>
+	<p>查看所有正在运行的容器：
+<pre class="definepre">
+docker ps -a
+
+运行结果：
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                      PORTS               NAMES
+bb6e9b244200        hello-world         "/hello"            11 seconds ago      Exited (0) 10 seconds ago                       boring_dirac
+e8317e5f0060        hello-world         "/hello"            39 hours ago        Exited (0) 39 hours ago                         gracious_swanson
+</pre>
+	</p>
+	<p>可以看到所有的容器，包括已经停止运行的</p>
+	<h3>启动容器</h3>
+	<p>命令格式：
+<pre class="definepre">
+docker run [OPTIONS] IMAGE [COMMAND][ARG...]
+</pre>
+	</p>
+	<ul>
+		<li>OPTIONS:选项：<br/>
+			-i: 表示启动一个可交互的容器，并持续打开标准输入<br.>
+			-t: 表示使用终端关联到容器的标准输入输出,需要指定要使用的终端，比如大家都有的/bin/sh/当然也可以用bash fish之类的终端<br/>
+			-d: 表示将容器放置到后台运行<br/>
+			--rm: 退出后即删除容器<br/>
+			--name: 表示定义容器唯一名称,不指定会随机一个名称<br/></li>
+		<li>IMAGE: 表示要运行的镜像</li>
+		<li>COMMAND：表示启动容器时要运行的命令</li>
+		<li>ARG: 传入的参数</li>
+	</ul>
+	<h3>进入容器</h3>
+	<p>进入容器：
+<pre class="definepre">
+docker exec -it 容器ID/容器名 /bin/sh
+</pre>
+	</p>
+	<p>如果想退出容器使用命令exit</p>
+	<h3>停止容器</h3>
+	<p>停止容器：
+<pre class="definepre">
+docker stop 容器ID/容器名字
+</pre>
+	</p>
+	<h3>开始容器</h3>
+	<p>开始一个状态为Exited的容器：
+<pre class="definepre">
+docker start 容器ID/容器名字
+</pre>
+	</p>
+	<h3>重新启动容器</h3>
+	<p>重新启动一个正在运行的容器：
+<pre class="definepre">
+docker restart 容器ID/容器名字
+</pre>
+	</p>
+	<h3>删除容器</h3>
+	<p>删除容器：
+<pre class="definepre">
+docker rm 容器名/容器ID
+</pre>
+	</p>
+	<p>可以加-f强制删除</p>
+	<p>删除所有已经退出的容器：
+<pre class="definepre">
+for i in `docker ps -a|grep -i exit|sed 'ld'|awk '{print $l}'`;do docker rm -f $i;done
+</pre>
+	</p>
+	<h3>提交容器</h3>
+	<p>如果对运行中的容器有了一切更改，比如写了个文件进去。想要下次启动容器的时候还能看到那个文件，就要提交容器</p>
+	<p>提交容器写法：
+<pre class="definepre">
+docker commit 容器ID 新镜像名
+</pre>
+	</p>
+	<p>比如：
+<pre class="definepre">
+docker run -ti ubuntu /bin/bash		//启动一个容器并关联到终端
+cd home					//进入容器的home目录
+echo "hello world"&gt&gthello		//写一个文件到home目录
+exit 					//退出容器
+docker commit -p e1b5cc20781c ubuntu:v1 //提交容器
+运行结果：
+sha256:666860311580637a0bf342f37e17595676a72632d51b12b76dd4156aa375a056
+
+再查看镜像，可以发现新创建的镜像
+ubuntu              v1                  666860311580        3 minutes ago
+测试一下：
+docker run ubuntu:v1 cat /home/hello
+运行结果：
+hello world
+</pre>
+	</p>
+	<p>可以看到新的ubuntu:v1容器中有我们之前写入的hello文件</p>
+	<p>这个时候如果把这个新的镜像删除，会有有趣的现象：
+<pre class="definepre">
+docker rmi 666860311580
+Untagged: ubuntu:v1
+Deleted: sha256:666860311580637a0bf342f37e17595676a72632d51b12b76dd4156aa375a056
+Deleted: sha256:796b9cacd482feed608c200ffe7131b74310d3a1497f5e9a446ff2bbe2b626c1
+</pre>
+	</p>
+	<p>可以看到untagged后，只删除了两层，而ubuntu镜像是有四层的。其实这两层一个是commit创建的(镜像层的ID与执行commit得到的输出结果是相同的);另一个是写入的文件创建的。真正的ubuntu的四层由于我们本地还有ubunte:latest镜像，所以是不会删除的</p>
+	<h3>镜像导出</h3>
+	<p>如果说需要将某个镜像打包成一个文件，可以将镜像打包成.tar文件</p>
+	<p>镜像导出：
+<pre class="definepre">
+docker save 镜像ID &gt 文件名
+</pre>
+	</p>
+	<h3>镜像导入</h3>
+	<p>把.tar文件解包成镜像，可以使用镜像导入命令：
+<pre class="definepre">
+docker load &lt 文件名
+</pre>
+	</p>
+	<h3>查看容器的日志</h3>
+	<p>
+<pre class="definepre">
+docker logs 容器ID 
+</pre>
+	</p>
+</body>
+</html>

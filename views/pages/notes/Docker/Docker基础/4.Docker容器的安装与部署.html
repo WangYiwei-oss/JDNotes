@@ -1,0 +1,287 @@
+<!-->Docker<-->
+<!-->Docker基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Docker的安装与部署</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Docker的安装与部署</h1>
+	<p>ubuntu系统直接运行:
+<pre class="definepre">
+sudo apt-get install docker
+</pre>
+	</p>
+	<p>安装完成后使用命令查看docker是否正常运行：
+<pre class="definepre">
+docker info
+
+运行结果为：
+Client:
+ Debug Mode: false
+
+Server:
+ Containers: 0
+  Running: 0
+  Paused: 0
+  Stopped: 0
+ Images: 5
+ Server Version: 19.03.13
+ Storage Driver: overlay2
+  Backing Filesystem: extfs
+  Supports d_type: true
+  Native Overlay Diff: true
+ Logging Driver: json-file
+ Cgroup Driver: cgroupfs
+ Plugins:
+  Volume: local
+  Network: bridge host ipvlan macvlan null overlay
+  Log: awslogs fluentd gcplogs gelf journald json-file local logentries splunk syslog
+ Swarm: active
+  NodeID: 2605jgs0zmlxctgvmf7o4o311
+  Is Manager: true
+  ClusterID: oi6zo8sz0gejjk9cbwz14vhga
+  Managers: 1
+  Nodes: 1
+  Default Address Pool: 10.0.0.0/8
+  SubnetSize: 24
+  Data Path Port: 4789
+  Orchestration:
+   Task History Retention Limit: 5
+  Raft:
+   Snapshot Interval: 10000
+   Number of Old Snapshots to Retain: 0
+   Heartbeat Tick: 1
+   Election Tick: 10
+  Dispatcher:
+   Heartbeat Period: 5 seconds
+  CA Configuration:
+   Expiry Duration: 3 months
+   Force Rotate: 0
+  Autolock Managers: false
+  Root Rotation In Progress: false
+  Node Address: 10.203.213.168
+  Manager Addresses:
+   10.203.213.168:2377
+ Runtimes: runc
+ Default Runtime: runc
+ Init Binary: docker-init
+ containerd version: 8fba4e9a7d01810a393d5d25a3621dc101981175
+ runc version: dc9208a3303feef5b3839f4323d9beb36df0a9dd
+ init version: fec3683
+ Security Options:
+  apparmor
+  seccomp
+   Profile: default
+ Kernel Version: 5.4.0-52-generic
+ Operating System: Ubuntu 20.04.1 LTS
+ OSType: linux
+ Architecture: x86_64
+ CPUs: 12
+ Total Memory: 15.56GiB
+ Name: wangyiwei-Legion-Y7000P-2019
+ ID: BP7N:PV6I:C3Y6:KBOT:SQHZ:K3NC:RLLT:AOGD:YCU6:J4QC:NRIU:VINL
+ Docker Root Dir: /var/lib/docker
+ Debug Mode: false
+ Registry: https://index.docker.io/v1/
+ Labels:
+ Experimental: false
+ Insecure Registries:
+  127.0.0.0/8
+ Live Restore Enabled: false
+
+WARNING: No swap limit support
+</pre>
+	</p>
+	<p>表示安装成功并成功运行，如果没有成功运行可以使用命令：
+<pre class="definepre">
+systemctl enable docker
+systemctl start docker
+</pre>
+	</p>
+	<p>第一句是让docker开机运行，第二句是启动docker</p>
+	<p>在运行之前还可以对docker进行配置，但是比较复杂，先不去管他。配置文件的路径在/etc/docker/daemon.json</p>
+	<h2>第一个docker以及执行路径</h2>
+	<p>使用命令：hello-world是一个官方的镜像，就是官方推荐的第一个镜像啦
+<pre class="definepre">
+docker run hello-world
+
+运行结果为：
+Unable to find image 'hello-world:latest' locally
+docker: Error response from daemon: pull access denied for hello-world, repository does not exist or may require 'docker login': denied: requested access to the resource is denied.
+See 'docker run --help'.
+</pre>
+	</p>
+	<p>可以看到第一行是在本地没有找到hello-world镜像，然后第二句是一个报错，说我们没有权限去pull。那我们去注册一个Docker Hub帐号就好</p>
+	<a href="https://hub.docker.com">https://hub.docker.com/</a>
+	<p>注册好之后运行登陆：
+<pre class="definepre">
+docker login
+</pre>
+	</p>
+	<p>然后再次运行hello-world容器：
+<pre class="definepre">
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+0e03bdcc26d7: Pull complete
+Digest: sha256:8c5aeeb6a5f3ba4883347d3747a7249f491766ca1caa47e5da5dfcf6b9b717c0
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+</pre>
+	</p>
+	<p>发现运行成功了，并且能够得到一些有用的输出信息。首先第一行是说本地没有名字叫hello-world:latest的<strong style="color:red">image(镜像)</strong>。然后第二行去<strong style="color:red">library(库)</strong>去<strong style="color:red">pull(拉取)</strong>了上面的镜像。第三行表示拉取成功了。然后说Status(状态)已经是成功下载了镜像。后面就是运行了镜像之后得到的输出信息。首先说了看到这条信息说明安装成功。然后后面的输出信息告诉了我们Docker的运行机制</p>
+	<ol>
+		<li><strong style="color:red">Docker client(docker客户端)</strong>链接到了<strong style="color:red">Docker Daemon(docker服务器)</strong>，这说明了Docker是客户端-服务器架构的。Docker Daemon是作为守护进程跑在操作系统里面的。那我就可以搞多个客户端，不论是本机多客户端还算多机客户端。</li>
+		<li>Docker服务端从Docker Hub拉取了镜像hello-world</li>
+		<li>Docker服务端从镜像创建了一个新的<strong style="color:red">Container(容器)</strong>。这个容器运行了可执行程序输出了你看到的这一段信息</li>
+		<li>Docker服务器把这些信息用流的方式发送到了你的终端上</li>
+	</ol>
+	<h2>Docker的镜像管理</h2>
+	<h3>搜索一个镜像</h3>
+	<p>用以下的命令去搜索alpine(一种linux发行版)：
+<pre class="definepre">
+docker search alpine
+
+运行结果为：
+NAME                                   DESCRIPTION                                     STARS               OFFICIAL            AUTOMATED
+alpine                                 A minimal Docker image based on Alpine Linux…   6893                [OK]
+mhart/alpine-node                      Minimal Node.js built on Alpine Linux           475
+anapsix/alpine-java                    Oracle Java 8 (and 7) with GLIBC 2.28 over A…   454                                     [OK]
+frolvlad/alpine-glibc                  Alpine Docker image with glibc (~12MB)          247                                     [OK]
+gliderlabs/alpine                      Image based on Alpine Linux will help you wi…   183
+alpine/git                             A  simple git container running in alpine li…   154                                     [OK]
+mvertes/alpine-mongo                   light MongoDB container                         116                                     [OK]
+yobasystems/alpine-mariadb             MariaDB running on Alpine Linux [docker] [am…   74                                      [OK]
+alpine/socat                           Run socat command in alpine container           60                                      [OK]
+kiasaki/alpine-postgres                PostgreSQL docker image based on Alpine Linux   45                                      [OK]
+davidcaste/alpine-tomcat               Apache Tomcat 7/8 using Oracle Java 7/8 with…   42                                      [OK]
+jfloff/alpine-python                   A small, more complete, Python Docker image …   37                                      [OK]
+byrnedo/alpine-curl                    Alpine linux with curl installed and set as …   33                                      [OK]
+hermsi/alpine-sshd                     Dockerize your OpenSSH-server with rsync and…   32                                      [OK]
+zenika/alpine-chrome                   Chrome running in headless mode in a tiny Al…   26                                      [OK]
+hermsi/alpine-fpm-php                  FPM-PHP 7.0 to 8.0, shipped along with tons …   25                                      [OK]
+etopian/alpine-php-wordpress           Alpine WordPress Nginx PHP-FPM WP-CLI           24                                      [OK]
+bashell/alpine-bash                    Alpine Linux with /bin/bash as a default she…   18                                      [OK]
+davidcaste/alpine-java-unlimited-jce   Oracle Java 8 (and 7) with GLIBC 2.21 over A…   13                                      [OK]
+spotify/alpine                         Alpine image with `bash` and `curl`.            11                                      [OK]
+roribio16/alpine-sqs                   Dockerized ElasticMQ server + web UI over Al…   11                                      [OK]
+cfmanteiga/alpine-bash-curl-jq         Docker Alpine image with Bash, curl and jq p…   6                                       [OK]
+hermsi/alpine-varnish                  Dockerize Varnish upon a lightweight alpine-…   3                                       [OK]
+bushrangers/alpine-caddy               Alpine Linux Docker Container running Caddys…   1                                       [OK]
+goodguykoi/alpine-curl-internal        simple alpine image with curl installed no C…   0                                       [OK]
+</pre>
+	</p>
+	<p>那么显示出来的就是Docker Hub上面提供的所有的相关镜像</p>
+	<h3>下载镜像</h3>
+	<p>现在想要下载第一个(名字为alpine)的镜像：
+<pre class="definepre">
+docker pull alpine
+
+运行结果为:
+Using default tag: latest
+latest: Pulling from library/alpine
+188c0c94c7c5: Pull complete
+Digest: sha256:c0e9560cda118f9ec63ddefb4a173a2b2a0347082d7dff7dc14272e7841a5b5a
+Status: Downloaded newer image for alpine:latest
+docker.io/library/alpine:latest
+</pre>
+	</p>
+	<p>可以看到下载成功了，关注一下最后一行。表示是这个镜像的结构<br/>
+	${registry_name}/${repository_name}/${image_name}:${tag_name}<br/>
+	也就是远端仓库的地址/仓库名字/镜像名字:标签
+	</p>
+	<p>如果不是官方仓库，要做私有仓库的话，在pull的时候镜像结构必须写完整</p>
+	<h3>查看所有的本地镜像</h3>
+	<p>查看所有的本地镜像可以使用命令：
+<pre class="definepre">
+docker images
+docker image ls
+
+运行结果：
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+web                 latest              a10a815171fd        12 days ago         72.9MB
+alpine              latest              d6e46aa2470d        2 weeks ago         5.57MB
+nginx               latest              f35646e83998        3 weeks ago         133MB
+ubuntu              latest              9140108b62dc        6 weeks ago         72.9MB
+hello-world         latest              bf756fb1ae65        10 months ago       13.3kB
+</pre>
+	</p>
+	<p>可以看到我们刚才pull的alpine和hello-world还有几个我自己之前pull的镜像。显示了镜像名-标签-镜像ID-创建时间和大小</p>
+	<h3>给镜像打标签</h3>
+	<p>可以更改镜像的标签：
+<pre class="definepre">
+docker tag 镜像ID 新镜像的完整结构
+docker tag a10a815171fd wangyiwei/test:v1.0.0
+
+再查看本地镜像：
+test                 v1.0.0              a10a815171fd        13 days ago         72.9MB
+web                  latest              a10a815171fd        13 days ago         72.9MB
+</pre>
+	</p>
+	<p>可以看到新命名的标签，并且镜像的ID是一样的，镜像ID其实就是一个hash</p>
+	<p>要注意这个命名是有规范的，wangyiwei是我在DockerHub上面的仓库的名称，而test是我新创建的Repository，只有遵循这个命名才可以push自己镜像上去</p>
+	<h3>推送镜像</h3>
+	<p>推送镜像：
+<pre class="definepre">
+docker push 镜像结构
+docker push docker.io/wangyiwei/test:v1.0.0
+
+The push refers to repository [docker.io/wangyiwei/test]
+5d9b49672bad: Pushed
+ab3644448e13: Pushed
+782f5f011dda: Pushed
+90ac32a0d9ab: Pushed
+d42a4fdf4b2a: Pushed
+v1.0.0: digest: sha256:40b22542d2513f091415d4b8d54b93564feb76421d33860917e9626a0c92a732 size: 1358
+</pre>
+	</p>
+	<p>可以看到push成功了，并且在DockerHub上面可以查看到刚才推送的镜像。如果提示请求被拒绝了，请docker login</p>
+	<img src="./pic/docker推送.png" alt="">
+	<h3>删除镜像</h3>
+	<p>删除镜像：
+<pre class="definepre">
+docker rmi 镜像名字:tag
+docker rmi test:v1.0.0
+
+运行结果为：
+Untagged: test:v1.0.0
+</pre>
+	</p>
+	<p>此时再查看所有镜像，已经看不到这个镜像了，但他其实还没有真正的被删除，因为他的镜像层有其他的镜像在依赖，所以如果再把它依赖的镜像删除：
+<pre class="definepre">
+docker rmi web:latest
+Untagged: web:latest
+Deleted: sha256:a10a815171fd4cd2258bc19435fe7282644a44044559842ffdc301f8662d728a
+Deleted: sha256:2cd7ec74ec23fd4a412a60996e8e8f1755d0b27e108005912e74cf43c3f4fe10
+Deleted: sha256:48b9fee3b27e59ccb4adfbd6eb73148c6cd6cf1e2a7639afdc58a3c32a369f21
+Deleted: sha256:6c068214b00f102dd997f6cca67e364c1457850aba45842733c23cf3d8207c3a
+Deleted: sha256:03c25266e9eeb0d672d4deaf5f7325e01d58d60398a734556c802169ec4683e8
+</pre>
+	</p>
+	<p>可以看到这次在untagged后，由于四个镜像层都没有依赖的镜像了，所以对其进行了删除</p>
+	<p>或者直接用命令docker rmi -f 镜像ID 即可删除此ID的所有镜像,-f表示force强制删除。如果不加的话，会由于有依赖而导致不能删除</p>
+	<h3>Docker镜像特性</h3>
+	<img src="./pic/docker结构.png" alt="">
+	<p>docker镜像特性</p>
+	<ul>
+		<li>Docker镜像位于bootfs之上</li>
+		<li>每一层镜像的下面一层称为其父镜像</li>
+		<li>第一层镜像为Base Image(是操作系统)</li>
+		<li>容器在最顶层，并且是可写的。</li>
+		<li>只有容器层是可写的，其余的层都是Readonly</li>
+		<li>Docker将readonly的FS层称作image</li>
+	</ul>
+</body>
+</html>

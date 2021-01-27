@@ -5,13 +5,31 @@
 	<title>我的笔记</title>
 	<link rel="stylesheet" href="../static/CSS/header.css">
 	<link rel="stylesheet" href="../static/CSS/mynotes.css">
+	<link rel="stylesheet" href="../static/CSS/notes.css">
+	<script src="static/JS/jquery-1.10.2.js"></script>
+	<script>
+		$(function(){
+			{{range $key,$value:=.titles}}
+			$("#{{$key}}_btn").click(function(){
+				content=$(".{{$key}}_a");
+				if(content.css("display")=="block"){
+					content.css("display","none");
+					$("#{{$key}}_btn").text("+");
+				}else{
+					content.css("display","block");
+					$("#{{$key}}_btn").text("-");
+				}
+			});
+			{{end}}
+		});
+	</script>
 </head>
 <body>
 	<div id="header">
         <a id="mainlogo" href="/index">主LOGO</a>
         <a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
         <a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
-        <a class="label1" href="pages/mynotes.html">我的笔记</a>
+        <a class="label1" href="mynotes">我的笔记</a>
         <a class="label1" href="pages/expassistant.html">实验助手</a>
         <a class="label2" href="pages/user/register.html">注册</a>
         <a class="label2" href="/pages/user/login.html">登陆</a>
@@ -19,16 +37,41 @@
         <div id="welcome"></div>
 	
 	<div id="directory">
-		<a href="#">Golang</a>
-		<a href="#">Cpp</a>
+		{{range .firstclass}}
+		<a href="/mynotes?firstclass={{.}}">{{.}}</a>
+		{{end}}
 	</div>
 	<div style="height:100%;width:100%">
 		<div id=guide>
-		<a href="#">第一节</a>
-		<a href="#">第二节</a>
+		{{range $key,$value:=.titles}}
+		<div style="
+	width:70%;
+        height:2.5rem;
+        display:inline-block;
+        font-size:1rem;
+        text-align:center;
+	color:rgb(20,68,106);
+	font-weight:bold;
+			">{{$key}}</div>
+		<button id="{{$key}}_btn" style="
+	background-color:rgba(0,0,0,0);
+	margin:0px;
+	padding:0px;
+	display:inline-block;
+	height:2rem;
+	width:10%;
+	text-align:center;
+	font-size:1rem;
+	font-weight:bold;
+	border-style:none;
+			">+</button>
+			{{range $value }}
+			<a class="{{$key}}_a" href="/mynotes?firstclass={{.Firstclass}}&title={{.Title}}">{{.Title}}</a>
+			{{end}}
+		{{end}}
 		</div>
 		<div id="content">
-			{{.}}
+			{{.text}}
 		</div>
 	</div>
 </body>

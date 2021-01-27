@@ -1,0 +1,32 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>指针</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>指针</h1>
+	<p>go语言中有指针，但不像C++中那么复杂，因为go不支持指针操作。重点关心的只有两个运算符：<br/>
+	&amp取地址运算符和*根据地址取值运算符</p>
+	<h3>new函数</h3>
+	<p>new函数<strong>(注意go中的new是一个全局函数，而不是一个关键字)</strong>用来申请一块内存地址，返回类型的指针。常用来new一个结构体，或是基本数据类型</p>
+	<p>func new(T type) type</p>
+	<h3>make函数</h3>
+	<p>make函数也用于分配内存，区别于new，它只用于slice，map，channel的内存的分配。并且它返回的类型就是这三个类型的本身(引用类型)，而不是它们的指针。这也很合理，因为这三种类型本身就是引用类型，所以就不需要再返回它们的指针了。</p>
+	<p>并且在使用slice，map，channel类型之前，都必须分配了空间才可以开始操作(连内存空间都没有还怎么操作呢？)</p>
+	<p>func make(T type, size...IntergerType) type</p>
+	<p>下面是一个示例</p>
+	<p>
+<pre class="codepre">
+a := new(int)
+*a = 5
+fmt.Println(a, *a)
+
+运行结果为：
+0xc0000b8010 5
+</pre>
+	</p>
+</body>
+</html>

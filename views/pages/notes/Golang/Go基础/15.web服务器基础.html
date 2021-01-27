@@ -1,0 +1,67 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>最简单的web服务器</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>最简单的web服务器</h1>
+	<h2>Web应用的各个组成部分</h2>
+	<p>Web服务基本上的执行方式是：它会对客户端(大多数情况是浏览器)发送的HTTP请求做出响应，并通过HTTP响应将HTML回传给客户端</p>
+	<p>Web应用就是一个执行以下任务的程序：</p>
+	<ol>
+		<li>通过HTTP协议，以HTTP请求报文的形式获取客户端输入</li>
+		<li>对HTTP请求报文进行处理，并执行必要的操作</li>
+		<li>生成HTML，并以HTTP响应报文的形式将其返回给客户端</li>
+	</ol>
+	<p>为了完成这些任务，Web应用被分成了处理器(handler)和模板引擎(template engine)两个部分</p>
+	<h4>MVC模式</h4>
+	<p>在介绍处理器之前先介绍一下MVC模式：</p>
+	<p>MVC(Model-View-Controller)模型-视图-控制器模式，是编写web应用时常用的模式，常用到以至于人们错误地认为这一模型就是web应用开发本身。其中模型用于表示底层的数据，视图则以可视化的方式向用户展示模型，控制器则会根据用户的输入对模型进行修改</p>
+	<h4>处理器</h4>
+	<p>Web应用中的处理器要用于接收和处理客户端发来的请求，还需要调用模板引擎，然后由模板引擎生成HTML并把数据填充至将要回传给客户端的响应报文中</p>
+	<p>用MVC模式来讲，处理器即是控制器也是模型。在理想的MVC实现中，控制器应该是苗条的，它应该只包含路由代码以及HTTP报文的解包打包逻辑。而模型则应该是丰满的，它应该包含应用的逻辑以及数据</p>
+	<h4>模板引擎</h4>
+	<p>通过HTTP响应报文回传给客户端的HTML是由模板(template)转换而成的，模板里面可能会包含HTML可能不会，而模板引擎则通过模板和数据来生成最终的HTML。模板引擎可分为静态模板和动态模板</p>
+	<p>静态模板：是一些夹杂着占位符的HTML，静态模板引擎通过将静态模板中的占位符替换成相应数据来生成最终的HTML。比如CTemplate,Mystache</p>
+	<p>动态模板：除了包含HTML和占位符外，还包含一些变成语言结构，如条件语句，迭代语句和变量。如JavaServer,Active Server Pages和Embedded Ruby</p>
+	<h2>写一个简单的Web服务器</h2>
+	<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "net/http"
+)
+
+func f1(writer http.ResponseWriter, request *http.Request) {
+	str="&lthtml&gt&ltbody&gt&lth1&gtHello Go Web&lt/h1&gt&lt/body&gt&lt/html&gt"
+        writer.Write([]byte(str))
+        fmt.Println(request.Host)
+        fmt.Println(request.URL)
+}
+
+func main() {
+        http.HandleFunc("/hello", f1)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p>运行这个程序之后，在浏览器中输入127.0.0.1:8000/hello即可看到此画面</p>
+	<img src="./pic/helloweb.png" alt="">
+	<p>那么在这个简单的服务器中我们也看到了处理器的身影，就是函数f1。而str其实就相当于没有处理功能的模板引擎</p>
+	<h2>将Web服务部署到Docker</h2>
+	<p>既然我们写了一个应用，那我就想着能不能把他部署到docker呢？</p>
+	<p>首先把我们的代码构建成可执行程序go build test.go就可以在当前目录生成名为test的可执行文件啦</p>
+	<p>然后使用命令：
+<pre class="codepre">
+docker run -d --rm -p80:8000 -v/home/wangyiwei/总笔记/主页/Go:/home ubuntu /home/test
+</pre>
+	</p>
+	<p>那逻辑就是运行ubuntu容器，-d: 后台运行 --rm: 结束即删除 -p端口映射 -v文件映射(:前是我test所在目录，后面是容器内的目录，偷懒就这样写啦) 运行/home/test</p>
+	<p>再用浏览器输入网址试一试呢？别忘了端口映射成80了哦</p>
+</body>
+</html>

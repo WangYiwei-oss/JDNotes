@@ -1,0 +1,351 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>goroutine和通道</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>goroutine和通道</h1>
+	<h2>并发</h2>
+	<p>先了解一下并发和并行：<br/>
+	并发：同一时间段执行多个任务，但同一时刻只执行一个任务<br/>
+	并行：同一时刻执行多个人物<br/>
+	</p>
+	<p>Go有两种风格的并发编程，一种是goroutine和通道(channel)，另一种是共享内存多线程</p>
+	<h2>goroutine</h2>
+	<p>Go语言中，每一个并发执行的活动称为goroutine</p>
+	<p>Go语言提供了一种简单且功能强大的并发机制——goroutine。goroutine可以想象成其他语言的线程，但是属于用户态线程。Go编程不需要自己去写进程、线程、携程，只需要goroutine就可以了。</p>
+	<p>我们其实已经接触到了goroutine程序，就是main函数，每启动一个程序就会有一个goroutine来调用main函数。称为主goroutine</p>
+	<h3>使用goroutine</h3>
+	<p>使用goroutine的方法非常简单，只需要需要在需要调用的函数前面加上go就可以了，就可以为一个函数创建一个goroutine。</p>
+	<p>下面是一个示例，用效率极低的递归算法计算斐波纳契数列45,在计算的时候用一个小动画表示我们的程序在运行中：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+func spinner(delay time.Duration) {
+        for {
+                for _, r := range `-\|/` {
+                        fmt.Printf("\r%c", r)
+                        time.Sleep(delay)
+                }
+        }
+}
+
+func fib(x int64) int64 {
+        if x &lt 2 {
+                return x
+        }
+        return fib(x-1) + fib(x-2)
+}
+
+func main() {
+        go spinner(time.Millisecond * 100)
+        var res int64 = fib(45)
+        fmt.Println(res)
+}
+</pre>
+	</p>
+	<p>可以看到两个函数是并发运行的，一边在正常地输出一个动画，一边还在计算斐波纳契数列。但这里的spinner函数是没有结束的，但main函数返回时其他所有的goroutine都会暴力地结束</p>
+	<h2>通道(channel)</h2>
+	<p>有时候不同的线程之间必须要进行通信，在goroutine中使用通道来实现一个goroutine发送特定值到另一个goroutine的通信机制</p>
+	<p>Go语言中的通道是一种特殊的类型。通道很像一个队列，遵循先入先出的规则，保证收发数据的数据。</p>
+	<p>每一个通道是一个具体类型的导管，叫做通道的元素类型。一个有int类型元素的通道写为chan int</p>
+	<h3>通道的声明</h3>
+	<p>通道可以拥有姓名：
+<pre class="definepre">
+var 通道名 chan 通道的元素类型
+</pre>
+	</p>
+	<p>通道在使用前必须用make初始化,可以指定缓冲区大小：
+<pre class="definepre">
+ch = make(chan int)	//无缓冲通道
+ch = make(chan int, 0)	//无缓冲通道
+ch = make(chan int, 3)	//容量为3个int的缓冲通道
+</pre>
+	</p>
+	<p>同种类型的通道可以用==比较。当二者都是同一通道数据的引用时，比较值为true。通道也可以与nil比较</p>
+	<p>通道仅仅支持三个操作：send, receive（前两者统称为通信）和close</p>
+	<h3>发送</h3>
+	<p>send语句从一个goroutine传输一个类型与通道类型相匹配的值到通道中</p>
+	<p>写法：
+<pre class="definepre">
+ch&lt- 10
+</pre>
+	</p>
+	<h3>接收</h3>
+	<p>receive语句从一个通道中接收一个值</p>
+	<p>写法：
+<pre class="definepre">
+x,ok := &lt- ch
+</pre>
+	</p>
+	<p>第一个接收值就是从通道读的值，第二个是是否成功读取，如果通道关闭了，且数据已经被读完，那第二个值就会返回false。一般这个ok是可以省略的。但是通过false能够间接判断通道是否已经关闭了，这很重要</p>
+	<h3>关闭</h3>
+	<p>关闭了的通道指的是关闭了发送</p>
+	<p>close会设置一个标志位来指示值当前已经发送完毕，这个通道后面没有值了。关闭通道的发送操作会导致宕机。关闭的通道还可以接受值，直到为空</p>
+	<p>写法
+<pre class="definepre">
+close(ch)
+</pre>
+	</p>
+	<h3>无缓冲通道</h3>
+	<p>无缓冲通道会利用阻塞来保证发送和接受一定是成对同时完成的</p>
+	<p>无缓冲通道就是容量为0的通道，无缓冲通道上的发送操作将会阻塞，直到另一个goroutine在对应的通道上执行接受操作。相反，如果接受操作先执行，接受方goroutine将阻塞，直到另一个goroutine在同一个通道上发送一个值</p>
+	<p>下面是一个实例，利用了通道的阻塞机制做了一个事件，让main等待goroutine结束：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+var done = make(chan struct{})
+
+func sleeper() {
+        fmt.Println("开始睡觉")
+        time.Sleep(time.Second * 10)
+        fmt.Println("睡醒了，叫main结束")
+        done &lt- struct{}{}
+}
+
+func main() {
+        go sleeper()
+        &lt-done //会阻塞
+        fmt.Println("睡醒了，不阻塞了")
+}
+运行结果为：
+开始睡觉
+睡醒了，叫main结束
+睡醒了，不阻塞了
+</pre>
+	</p>
+	<p>如果不加这个阻塞机制的话程序启动后立刻就会结束，并不会输出睡醒了，叫main结束</p>
+	<p>通过通道发送消息有两个方面需要考虑。每一条消息有一个值，但有时通信本身以及通信发生的时间也很重要。当我们强调这方面时，把消息叫做事件(event)。当事件没有携带额外的信息时，我们通过使用一个struct{}元素类型的通道来强调它。当然也可以用int或bool来做这件事情</p>
+	<h3>缓冲通道</h3>
+	<p>如果make时指定了缓冲区大小，那么缓冲通道有一个元素队列。缓冲通道上的发送操作在队列尾部插入一个元素，接受操作从队列头部移除一个元素。只有通道满了发送操作才会阻塞。只有通道空了接受操作才会阻塞。</p>
+	<p>通过这种操作，将发送和接收的goroutine解偶</p>
+	<p>想知道通道缓冲区的容量用cap()</p>
+	<p>想知道目前缓冲区有几个元素用len()</p>
+	<h3>管道</h3>
+	<p>如果一个goroutine的输出是另一个goroutine的输入，输入输出之间用通道连接。那这种通道称为管道</p>
+	<p>下面是一个管道的示例：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+)
+
+var pip1 = make(chan int)
+var pip2 = make(chan int)
+
+func write() { //输入数字
+        for i := 0; i &lt 10; i++ {
+                pip1 &lt- i
+        }
+}
+
+func square() { //平方
+        for {
+                x := &lt-pip1
+                pip2 &lt- x * x
+        }
+}
+func main() {
+        go write()
+        go square()
+        for i := 0; i &lt 10; i++ {
+                x := &lt-pip2
+                fmt.Println(x)
+        }
+}
+</pre>
+	</p>
+	<p>可以看到三个函数分别执行了输入数字，平方，和输出。虽然简陋，但有点看到了微服务的影子呢。但这个程序很蠢，因为在输出的地方还需要知道我输入的地方输入了几个数字</p>
+	<h3>优雅地从通道中取值</h3>
+	<p>从通道中取值可以使用range循环。这个语法可以更方便地接受在通道上所有发送的值，知道通道被close，如果通道中没有值了就会阻塞</p>
+	<p>所以把上述的程序改造一下：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+var pip1 = make(chan int)
+var pip2 = make(chan int)
+
+func write() { //输入数字
+        for i := 0; i &lt 10; i++ {
+                time.Sleep(time.Second)
+                pip1 &lt- i
+        }
+        close(pip1)
+}
+
+func square() { //平方
+        for x := range pip1 {
+                pip2 &lt- x * x
+        }
+        close(pip2)
+}
+func main() {
+        go write()
+        go square()
+        for x := range pip2 {
+                fmt.Println(x)
+        }
+}
+</pre>
+	</p>
+	<p>可以看到用了range后让程序优雅多了，并且解偶(由于使用了公共的全局管道变量，所以还没有完全解偶)。</p>
+	<h3>单向通道类型</h3>
+	<p>单向通道多用在函数的参数中</p>
+	<p>单向通道的声明是&lt-chan int和chan&lt-int这两种形式，分别表示只读通道和只写通道</p>
+	<p>违反规则的话会在编译阶段就报错</p>
+	<p>在任何赋值操作中将双向通道转换为单向通道都是允许的(可以隐式转换)。但反之不行</p>
+	<p>有对上面的例子进行了改造：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+func write(pip1 chan&lt- int) { //输入数字
+        for i := 0; i &lt 10; i++ {
+                time.Sleep(time.Second)
+                pip1 &lt- i
+        }
+        close(pip1)
+}
+
+func square(pip1 &lt-chan int, pip2 chan&lt- int) { //平方
+        for x := range pip1 {
+                pip2 &lt- x * x
+        }
+        close(pip2)
+}
+func main() {
+        var p1 = make(chan int)
+        var p2 = make(chan int)
+        go write(p1)
+        go square(p1, p2)
+        for x := range p2 {
+                fmt.Println(x)
+        }
+}
+</pre>
+	</p>
+	<p>这次就完全解偶了，并对函数内对通道的读写进行了限制。</p>
+	<h2>使用select多路复用</h2>
+	<p>注意，此select非彼selete</p>
+	<p>在某些场景下我们需要同时从多个通道收发数据，通道在收发数据时，如果没有数据可以接收或发送会发生阻塞。无法做到同时从多个通道收发数据</p>
+	<p>Go语言内置了select关键字，可以同时相应多个通道的操作。select的使用类似于switch语句。每个case会对应一个通道的通信过程。select会一直等待。直到一次通信来告知有一些情况可以执行。然后，它执行这次通信，执行此情况所对应的语句。</p>
+	<p>基本语法为：
+<pre class="definepre">
+select{
+	case &lt-ch1:
+	case data:=&lt-ch2:
+	case ch3&lt-data:
+	default:
+}
+</pre>
+	</p>
+	<p>可以看到多路复用不仅可以用来读数据，还能用来写数据</p>
+	<p>下面是一个实例，将上面的例子添加了一个功能，是按一下回车可以终止计算，是通过把通道用作事件，然后select多路复用实现的在接收计算值的同时还可以接收终止信息
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "os"
+        "time"
+)
+
+var abort = make(chan struct{})
+
+func write(pip1 chan&lt- int) { //输入数字
+        for i := 0; i &lt 10; i++ {
+                time.Sleep(time.Second)
+                pip1 &lt- i
+        }
+        close(pip1)
+}
+
+func square(pip1 &lt-chan int, pip2 chan&lt- int) { //平方
+        for x := range pip1 {
+                pip2 &lt- x * x
+        }
+        close(pip2)
+}
+
+func doabort() {
+        for {
+                a := make([]byte, 1)
+                os.Stdin.Read(a)
+                if a[0] == '\n' {
+                        abort &lt- struct{}{}
+                }
+        }
+}
+func main() {
+        var p1 = make(chan int)
+        var p2 = make(chan int)
+        go write(p1)
+        go square(p1, p2)
+        go doabort()
+        for i := 0; i &lt 10; i++ {
+                select {
+                case x := &lt-p2:
+                        fmt.Println(x)
+                case &lt-abort:
+                        fmt.Println("终止")
+                        return
+                }
+        }
+}
+运行结果为：
+0
+1
+4
+
+终止
+</pre>
+	</p>
+	<p>注意到上面这段代码不够优雅，因为我在主goroutine中需要知道总共要读多少次数据(10次)。由于用了select，就没办法用range了，但是可以通过间接判断通道关闭的办法：(只改了主函数)
+<pre class="codepre">
+func main(){
+        var p1 = make(chan int)
+        var p2 = make(chan int)
+        go write(p1)
+        go square(p1, p2)
+        go doabort()
+loop:
+        for {
+                select {
+                case x, ok := &lt-p2:
+                        if !ok {
+                                break loop
+                        }
+                        fmt.Println(x)
+                case &lt-abort:
+                        fmt.Println("终止")
+                        return
+                }
+        }
+}
+</pre>
+	</p>
+</body>
+</html>

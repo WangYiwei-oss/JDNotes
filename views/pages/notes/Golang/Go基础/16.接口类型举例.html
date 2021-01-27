@@ -1,0 +1,79 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>接口类型举例</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>接口类型举例</h1>
+	<h2>使用sort.Interface来排序</h2>
+	<p>sort包提供了针对任意序列根据任意排序函数原地排序的功能。这样的设计并不常见，通常排序算法都跟数据类型绑定。然而由于Go语言有接口这个强大的工具，所以Go语言中的sort.Sort函数对序列和其中的元素的布局没有任何要求，它使用了sort.Interface接口来指定通用的排序算法和每一个具体的序列类型之间的协议(contract)</p>
+	<p>一个原地排序算法需要知道三个信息：序列长度、比较两个元素的含义以及如何交换两个元素。所以sort.Interface有三个方法签名：
+<pre class="definepre">
+package sort
+
+type Interface interface{
+	Len() int
+	Less(i, j int) bool
+	Swap(i, j int)
+}
+</pre>
+	</p>
+	<p>也就是说，只要我的类型实现了这个接口(有这三个方法)，那我就可以用sort.Sort来排序</p>
+	<p>比如说我有个类型是people，里面有name和id成员，我想根据id来排序：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "sort"
+)
+
+type people struct {
+        name string
+        id   int
+}
+
+type peoples struct {
+        datas []people
+}
+
+func (p peoples) Len() int {
+        return len(p.datas)
+}
+func (p peoples) Less(i, j int) bool {
+        return p.datas[i].id &lt p.datas[j].id
+}
+func (p peoples) Swap(i, j int) {
+        p.datas[i], p.datas[j] = p.datas[j], p.datas[i]
+}
+
+func main() {
+        ds := []people{{name: "张三", id: 2},
+                {name: "李四", id: 1},
+                {name: "王五", id: 4},
+                {name: "张六", id: 3}}
+        var ps peoples
+        ps.datas = ds
+        fmt.Println(ps.datas)
+        sort.Sort(ps)
+        fmt.Println(ps.datas)
+}
+
+运行结果为：
+[{张三 2} {李四 1} {王五 4} {张六 3}]
+[{李四 1} {张三 2} {张六 3} {王五 4}]
+</pre>
+	</p>
+	<p>可以看到我定义的自己的类型，只要实现了三个方法签名，那我就可以传入sort.Sort函数，并得到正确的结果</p>
+	<p>这种技术可以方便地复用到其他排序方式，比如忽略大小写或者特殊字符。对于更复杂的排序，也可以使用同样的思路，只是加上更复杂的数据结构和更复杂的sort.Interface方法实现</p>
+	<p>为了简便起见，sort包专门提供了用于[]int,[]string,[]float64自然排序的函数和相关类型。对于其他类型，比如[]int64或者[]uint则需要自己写。</p>
+	<h2>http.Handler接口</h2>
+	<p></p>
+	<p></p>
+	<p></p>
+	<p></p>
+</body>
+</html>

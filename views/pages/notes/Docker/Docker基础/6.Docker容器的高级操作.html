@@ -1,0 +1,73 @@
+<!-->Docker<-->
+<!-->Docker基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Docker容器高级操作</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Docker容器的高级操作</h1>
+	<p>这里指的高级操作有四：</p>
+	<ul>
+		<li>映射端口</li>
+		<li>挂载数据卷</li>
+		<li>传递环境变量</li>
+		<li>容器内安装软件(工具)</li>
+	</ul>
+	<h2>映射端口</h2>
+	<p>为了完成这个实验，需要先pull下来nginx镜像</p>
+	<p>命令：
+<pre class="definepre">
+docker run -p 容器外部端口：容器内部端口
+docker run -d -p 81:80 nginx:v1
+docker ps -a
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                NAMES
+32a574f475e9        nginx:v1            "/docker-entrypoint.…"   6 seconds ago       Up 5 seconds        0.0.0.0:81-&gt80/tcp   quizzical_bhabha
+</pre>
+	</p>
+	<p>可以看到容器成功启动了，并且PORTS显示了宿主机0.0.0.0:81映射到了容器的0.0.0.0:80</p>
+	<p>此时我们使用浏览器输入127.0.0.1:81就可以访问到容器里面的80端口的服务，如图：</p>
+	<img src="./pic/hellonginx.png" alt="">
+	<p>-p是可以指定多个的</p>
+	<h2>挂载数据卷</h2>
+	<p>挂载数据卷就是把宿主机的某个文件和容器内的某个文件关联</p>
+	<p>做一些准备：
+<pre class="definepre">
+pwd
+/home/wangyiwei/总笔记/主页/Docker/test
+ls
+index.html
+</pre>
+	</p>
+	<p>可以看到我的这个目录下有一个index.html，现在我想用nginx服务来默认启动这个页面</p>
+	<p>
+<pre class="definepre">
+docker run -v 容器外部文件目录:容器内部文件目录
+docker run -d -p8000:80 -v/home/wangyiwei/总笔记/主页/Docker/test:/usr/share/nginx/html nginx:v1
+</pre>
+	</p>
+	<p>可以看到我把我的目录映射到了容器中的/usr/shared/nginx/html<br/>即默认启动页的目录。这时我再用浏览器打开127.0.0.1:8000可以看到显示正确了(当然由于.css目录没有映射，所以看起来有点丑)</p>
+	<img src="./pic/文件映射.png" alt="">
+	<h2>传递环境变量</h2>
+	<p>传递环境变量：
+<pre class="definepre">
+docker run -e环境变量key值=环境变量value
+docker run --rm -e HEIHEI=/heihei/haha/xixi nginx:v1 printenv
+
+运行结果为：
+HOSTNAME=66243b0655fd
+HOME=/root
+PKG_RELEASE=1~buster
+NGINX_VERSION=1.19.3
+HEIHEI=/heihei/haha/xixi
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+NJS_VERSION=0.4.4
+PWD=/
+</pre>
+	</p>
+	<p>printenv可以打印所有的环境变量，可以看到我们自定义的HEIHEI变量已经成功写入容器</p>
+	<h2>容器内安装软件(工具)</h2>
+	<p>其实就是直接执行linux的命令yum/apt等</p>
+</body>
+</html>

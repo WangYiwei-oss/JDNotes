@@ -13,5 +13,10 @@ func Test(t *testing.T) {
 	//user.SelectByUsername()
 	//fmt.Println(user)
 	//fmt.Println(user.CheckEmailFormat())
-	fmt.Println(user.CheckPassword())
+	//fmt.Println(user.CheckPassword())
+	//ScanAllNotesToMysql("/home/wangyiwei/JDNotes/views/pages/notes")
+	//GetAllNotes()
+	//GetAllFirstclass()
+	a := SelectByFirstClass("Golang")
+	fmt.Println(a)
 }

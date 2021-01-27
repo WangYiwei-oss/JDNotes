@@ -1,0 +1,126 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>函数</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>函数</h1>
+	<h2>函数的声明</h2>
+	<p>函数，更精确的叫法是命名函数。只能在包级别定义。每个函数都包含一个名字、一个形参列表、一个可选的返回列表以及函数体</p>
+	<p>
+<pre class="definepre">
+func 函数名(形参列表)(返回类表){<br/>
+	函数体<br/>
+}
+</pre>
+	</p>
+	<p>返回值是可以命名的。这个时候，每一个命名的返回值会声明为一个局部变量，并根据变量类型初始化为相应的0值，当存在返回列表时，函数必须以显示的return结束</p>
+	<p>几个形参或返回值类型一样时，可以只留下最右边的类型</p>
+	<p>函数的类型称为函数签名。形参和返回值都是函数签名的一部分。但是Go语言不支持函数的重载</p>
+	<p>Go语言不支持默认参数值</p>
+	<p>Go所有的形参和返回值的传递都是值传递，想要传递引用必须要显示声明</p>
+	<p>Go语言的函数可以返回多个参数，只要在返回值那里多写几个就行了</p>
+	<p>形参的参数可以定义为可变长的，在参数列表最后的类型名称之前使用省略号...表示声明一个变长函数。</p>
+	<p>下面是一个例子：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+)
+
+func add(n ...int) int {	//这里的n是一个int切片类型
+        res := 0
+        for _, a := range n {
+                res += a
+        }
+        return res
+}
+
+func main() {
+        fmt.Println(add(1, 2, 3))
+        fmt.Println(add(1, 2, 3, 4))
+}
+
+输出结果为：
+6
+10
+</pre>
+	</p>
+	<h2>错误</h2>
+	<p>Go语言不提供类似于try/catch这种的异常处理，Go语言认为错误是可预料的一部分，所以程序员必须显示地处理错误。具体的手段就是错误都是作为返回值来处理的</p>
+	<p>如果一个函数只会有一种错误，可以返回一个布尔值。如果有多种多样的错误，往往可以返回error类型</p>
+	<p>error是内置的接口类型。如果没有错误可以返回nil。如果有错误可以通过fmt.Errorf()函数来写入error</p>
+	<h2>函数变量</h2>
+	<p>函数变量是有类型的，并且它们可以赋值给变量或者传递或者从其他函数中返回。比如你可以 a:= func a(){}</p>
+	<p>函数变量也可以调用，用括号就行，比如 a()</p>
+	<p>函数类型的零值是nil，调用一个空的函数变量将导致宕机</p>
+	<p>函数变量可以和nil比较，但他们本身不可以比较</p>
+	<h2>匿名函数</h2>
+	<p>如果省略函数名，就是定义了一个匿名函数。与命名函数不同，匿名函数可以定义在所有地方</p>
+	<p><strong>函数是引用类型</strong>，看一个匿名函数的例子</p>
+	<p>
+<pre class="codepre">
+func square() func() int {
+        var x int=0
+        return func() int {
+                x++
+                return x * x
+        }
+}
+
+func main() {
+        f := square()
+        fmt.Println(f())
+        fmt.Println(f())
+        fmt.Println(f())
+        fmt.Println(f())
+}
+
+输出结果为：
+1
+4
+9
+16
+</pre>
+	</p>
+	<p>这就是一个函数变量是引用的例子。其中的局部变量x一直都被函数变量f所持有，所以一直没有消失。</p>
+	<h2>延迟函数的调用_defer语句</h2>
+	<p>一个函数可以在前面加上defer语句的修饰，表示会将其延迟处理。当defer归属的函数即将返回时，将延迟处理的语句按defer定义的逆序进行执行，也就是说，先被defer的语句最后被执行，最后被defer的语句最先执行。并且<strong>函数和参数表达式会在语句执行的时求值，但实际的调用会推迟到函数结束才执行</strong></p>
+	<p>Go中return语句的执行顺序是这样的：返回值=x————&gtRET指令</p>
+	<p>如果有defer就是：返回值=x————&gt运行defer————&gtRET指令</p>
+	<p>defer语句对于成对的操作很有用，比如打开和关闭，加锁和解锁，链接和断开。可以不再需要if close if close这么复杂的写法了</p>
+	<p>下面是一个用来计算函数执行时间的例子。说明变量赋值和执行的时机：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+func bigSlowOperation() {
+        defer trace()()
+        time.Sleep(10 * time.Second)
+}
+
+func trace() func() {
+        start := time.Now() //调用到这里就会赋值
+        fmt.Println("进入时间为：", start)
+        return func() { fmt.Println("结束时间为：", time.Since(start)) }	//如果加了defer真正的执行会在函数结束后
+}
+
+func main() {
+        bigSlowOperation()
+}
+
+输出结果为：
+进入时间为： 2020-11-03 19:23:50.566698159 +0800 CST m=+0.000027540
+结束时间为： 10.000436446s
+</pre>
+	</p>
+</body>
+</html>

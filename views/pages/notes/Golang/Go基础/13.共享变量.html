@@ -1,0 +1,389 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>共享变量</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>使用共享变量实现并发</h1>
+	<p>并发安全：是指函数，如果在并发调用的时候仍然能正确地工作，那么这个函数就是并发安全的</p>
+	<p>如果一个类型所有的可访问方法和操作都是并发安全的，则他可以称为并发安全的类型</p>
+	<p>竞态是指在多个goroutine按某些交错顺序执行时无法给出正确的结果</p>
+	<h2>数据竞态(data race)</h2>
+	<p>数据竞态发生于两个goroutine并发读写同一个变量并且至少有一个是写入时</p>
+	<p>比如有A和B按这样的顺序执行。A和B有公共的账户。A读取账户有100元，B读取账户有100元，A存100块钱账户总额200，B存100块钱账户总额200。最后俩人一看，账户只有200元钱。消失了100块</p>
+	<p>那么怎么避免数据竞态呢？</p>
+	<ol>
+		<li>不要修改变量，就是AB不要存钱了，别人先帮你存好200,那么AB俩人一查账户有300块。当然，用在存钱会有些奇怪。</li>
+		<li>避免多个goroutine访问同一个变量。比如让A和B不共享账户，那么存钱就不会有问题。或者让A和B都不能访问账户，他们的账户由C托管，想要存钱取钱都要用通道发送给C，那么存取钱也不会有问题。</li>
+		<li>允许多个goroutine访问同一个变量，但在同一时间只有一个goroutine可以访问。称为互斥机制</li>
+	</ol>
+	<h2>互斥锁</h2>
+	<p>互斥锁可以保证只有一个goroutine可以访问共享资源。GO语言中使用sync.Mutex类型来实现互斥锁。sync.Mutex.Lock()获取锁，sync.Mutex.Unlock()释放锁</p>
+	<p>写一个小程序来阐述互斥锁的作用：
+<pre class="codepre">
+下面是一个并发不安全的函数add，用来展示数据竞态产生的后果
+package main
+
+import (
+        "fmt"
+        "sync"
+)
+
+var count int
+var m sync.WaitGroup
+
+func add() {
+        m.Add(1)
+        count++
+        m.Done()
+}
+
+func main() {
+        for i := 0; i &lt 50000; i++ {
+                go add()
+        }
+        m.Wait()
+        fmt.Println(count)
+}
+按理说运行结果应该是50000才对，但是由于发生了数据竞态
+第一次运行结果：
+47314
+第二次运行结果:
+46718
+第三次运行结果：
+47677
+可以看到每次运行结果都是不同的，并且都不是50000
+</pre>
+	</p>
+	<p>由于50000个goroutine访问了同一块资源，并且伴有写的操作，所以发生了数据竞态，可以用互斥锁来保证并发安全：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "sync"
+)
+
+var count int
+var m sync.WaitGroup
+var mutex sync.Mutex
+
+func add() {
+        m.Add(1)
+        mutex.Lock()
+        count++
+        mutex.Unlock()
+        m.Done()
+}
+
+func main() {
+        for i := 0; i &lt 50000; i++ {
+                go add()
+        }
+        m.Wait()
+        fmt.Println(count)
+}
+第一次运行结果：
+50000
+第二次运行结果：
+50000
+第三次运行结果：
+50000
+</pre>
+	</p>
+	<p>可以看到，在写入数据前加锁，写完解锁。每次运行结果就都是正确的了</p>
+	<p>在lock和unlock之间的代码，可以自由地读取和修改共享变量，这一部分称为临界区域。在锁的持有人释放锁之前，其他goroutine不能获取锁。所以必须要注意在使用完之后应该立即释放锁，并且应该在所有分支都要记得释放锁，特别是错误分支。就比如这个服务崩溃了，锁还没来得及释放，那别人其实就都阻塞了。</p>
+	<p>Go语言的defer可以很好的解决这个问题</p>
+	<p>Go语言的互斥锁是不可入的，就是说无法对一个已经上锁的互斥量再上锁。因此程序逻辑有问题的话可能会导致死锁。</p>
+	<p>下面是一个死锁的例子,在一个函数中加锁又加锁：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "sync"
+)
+
+var count int
+var m sync.WaitGroup
+var mutex sync.Mutex
+
+func addtwo() {
+        m.Add(1)
+        mutex.Lock()
+        count++
+        addone()
+        mutex.Unlock()
+        m.Done()
+}
+
+func addone() {
+        mutex.Lock()
+        count++
+        mutex.Unlock()
+}
+
+func main() {
+        for i := 0; i &lt 50000; i++ {
+                go addtwo()
+        }
+        m.Wait()
+        fmt.Println(count)
+}
+
+//运行会报错
+</pre>
+	</p>
+	<p>我可以通过声明一个不带锁的addone来避免</p>
+	<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "sync"
+)
+
+var count int
+var m sync.WaitGroup
+var mutex sync.Mutex
+
+func addtwo() {
+        m.Add(1)
+        mutex.Lock()
+        count++
+        addoneWithoutMutex()
+        mutex.Unlock()
+        m.Done()
+}
+
+func addone() {
+        mutex.Lock()
+        count++
+        mutex.Unlock()
+}
+func addoneWithoutMutex() {
+        count++
+}
+
+func main() {
+        for i := 0; i &lt 50000; i++ {
+                go addtwo()
+        }
+        m.Wait()
+        fmt.Println(count)
+}
+</pre>
+	</p>
+	<p>这样运行就正确了，我想单独加一的时候调用addone。如果已经在外面加锁了，还想加一的时候调用addoneWithoutMutex</p>
+	<h2>读写互斥锁</h2>
+	<p>有时，多个goroutine同时访问一块资源，但是在其中99%都是读的操作，只有1%是写的操作。那么如果我读的时候加了互斥锁，那同时就只有我一个人可以读，效率很低。因为读是没有关系的，所以我想实现99个人同时读，那效率就会高很多</p>
+	<p>这时就要用到读写锁，读写锁分为读锁和写锁，当一个goroutine获取读锁之后，其他的goroutine如果是获取读锁就会获取读锁，如果是获取写锁就会阻塞等待所有读锁释放。</p>
+	<p>如果一个goroutine获取写锁之后，其他goroutine无论是获取读锁还是写锁都会阻塞等待</p>
+	<p>使用sync.RWMutex实现读写锁，用sync.RWMutex.Lock()获取写锁，用sync.RWMutex.Unlock()释放写锁。用sync.RWMutex.RLock()获取读锁，用sync.RWMutex.RUnlock()释放读锁</p>
+	<p>下面是一个实例，先用互斥锁实现，测一下执行时间：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "sync"
+        "time"
+)
+
+var count int
+var m sync.WaitGroup
+var mutex sync.Mutex
+
+func add() {
+        m.Add(1)
+        mutex.Lock()
+        count++
+        time.Sleep(time.Millisecond)
+        mutex.Unlock()
+        m.Done()
+}
+
+func view() {
+        m.Add(1)
+        mutex.Lock()
+        fmt.Println(count)
+        time.Sleep(time.Millisecond)
+        mutex.Unlock()
+        m.Done()
+}
+
+func main() {
+        t1 := time.Now()
+        for i := 0; i &lt 500; i++ {
+                go add()
+        }
+        for i := 0; i &lt 100000; i++ {
+                go view()
+        }
+        m.Wait()
+        fmt.Println(time.Since(t1))
+        fmt.Println(count)
+}
+</pre>
+运行结果最后两行为：
+1m51.117677194s
+500
+	</p>
+	<p>
+<pre class="codepre">再用读写锁实现，测一下执行时间：
+package main
+
+import (
+        "fmt"
+        "sync"
+        "time"
+)
+
+var count int
+var m sync.WaitGroup
+var mutex sync.RWMutex
+
+func add() {
+        m.Add(1)
+        mutex.Lock()
+        count++
+        time.Sleep(time.Millisecond)
+        mutex.Unlock()
+        m.Done()
+}
+
+func view() {
+        m.Add(1)
+        mutex.RLock()
+        fmt.Println(count)
+        time.Sleep(time.Millisecond)
+        mutex.RUnlock()
+        m.Done()
+}
+
+func main() {
+        t1 := time.Now()
+        for i := 0; i &lt 500; i++ {
+                go add()
+        }
+        for i := 0; i &lt 100000; i++ {
+                go view()
+        }
+        m.Wait()
+        fmt.Println(time.Since(t1))
+        fmt.Println(count)
+}
+1.01564304s
+500
+</pre>
+	</p>
+	<p>程序中的Sleep是为了模拟抢占锁很激烈的状态。可以看到用读写锁比用互斥锁程序执行时间大幅缩短。在竞争不激烈的时候，或读写操作数量差别不大的时候，读写锁比互斥锁慢</p>
+	<h2>sync.Once</h2>
+	<p>很多场景下我们需要确保某些操作在高并发的场景下只执行一次，比如只加载一次配置文件，只关闭一次通道，只加载一次map等</p>
+	<p>使用sync.Once类完成，对只要调用一次的函数load()用sync.Once.Do(load)就可以</p>
+	<p>举个例子：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "sync"
+)
+
+var count int
+var once sync.Once
+
+func add() {
+        count++
+}
+
+func onceadd() {
+        once.Do(add)
+}
+func main() {
+        for i := 0; i &lt 1000; i++ {
+                go onceadd()
+        }
+        fmt.Println(count)
+
+}
+运行结果为：
+1
+</pre>
+	</p>
+	<h2>sync.Map</h2>
+	<p>Go语言中的map不是并发安全的。并发地读写map可能会有问题。可以选择加锁但麻烦</p>
+	<p>Go语言的sync包提供了一个开箱即用的并发安全版map，即sync.Map。不需要初始化，同时不能再用map[]和for range这种操作了。要用其内置Store,Load,LoadOrStore,Delete,Range等方法来做读写删除遍历等</p>
+	<h2>竞态检测器</h2>
+	<p>竞态往往是很难被发现的。但是Go语言提供了一个易于使用的动态分析工具：竞态检测器</p>
+	<p>使用时只需要在docker run后面加上-race就可以了，对于本节最上面的竞态程序，如果加上go run -race就会输出如下报告：</p>
+	<p>
+<pre class="codepre">
+==================
+WARNING: DATA RACE
+Read at 0x000000644f80 by goroutine 7:
+  main.add()
+      /home/wangyiwei/总笔记/主页/Go/test.go:10 +0x3a
+
+Previous write at 0x000000644f80 by goroutine 8:
+  main.add()
+      /home/wangyiwei/总笔记/主页/Go/test.go:10 +0x56
+
+Goroutine 7 (running) created at:
+  main.main()
+      /home/wangyiwei/总笔记/主页/Go/test.go:14 +0x4f
+
+Goroutine 8 (finished) created at:
+  main.main()
+      /home/wangyiwei/总笔记/主页/Go/test.go:14 +0x4f
+==================
+9942
+Found 1 data race(s)
+exit status 66
+</pre>
+	</p>
+	<p>可以看到main.add()发生了竞态，检测到了一个竞态。</p>
+	<h2>原子性操作</h2>
+	<p>Go语言还提供了原子性操作可以避免竞态，性能比加锁操作更好。但是只有对int类型的读取，写入，修改，交换操作</p>
+	<p>原子操作由底层硬件支持，而锁则由操作系统提供的API实现。前者会更有效率</p>
+	<p>由sync/atomic包实现</p>
+	<table>
+		<thead>
+		<tr>
+			<td>方法</td>
+			<td>解释</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>func LoadInt32(addr*int32)(val int32)<br/>
+				func LoadInt64(addr*int64)(val int64)<br/>
+				func LoadUint32(addr*uint32)(val uint32)<br/>
+				func LoadUint64(addr*uint64)(val uint64)<br/>
+				func LoadUintptr(addr*uintptr)(val uintptr)<br/>
+			func LoadPointer(addr*unsafe.Pointer)(val unsafe.Pointer)</td>
+			<td>读取操作</td>
+		</tr>
+		<tr>
+			<td>func StoreInt32(addr*int32,val int32)</td>
+			<td>写入操作，共六个，对应读取操作的</td>
+		</tr>
+		<tr>
+			<td>func AddInt32(addr*int32,delta int32)(new int32)</td>
+			<td>修改操作，共五个，除了最后那个</td>
+		</tr>
+		<tr>
+			<td>func SwapInt32(addr*int32,new int32)(old int32)</td>
+			<td>交换操作,共六个</td>
+		</tr>
+		<tr>
+			<td>func CompareAndSwapInt32(addr*int32,old,new int32)(swapped bool)</td>
+			<td>比较并操作,共六个</td>
+		</tr>
+
+	</table>
+</body>
+</html>

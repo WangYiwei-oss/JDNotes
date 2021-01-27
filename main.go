@@ -26,6 +26,7 @@ func main() {
 	http.HandleFunc("/checkUsername", controller.CheckUsername)
 	http.HandleFunc("/checkPassword", controller.CheckPassword)
 	http.HandleFunc("/checkEmail", controller.CheckEmail)
+	http.HandleFunc("/mynotes", controller.MyNotes)
 	fmt.Println("Ip:0.0.0.0\nPort:8080")
 	http.ListenAndServe(":8080", nil)
 }

@@ -1,0 +1,87 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>流程控制</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>流程控制</h1>
+	<p>go语言中常用的流程控制就是if和for，此外还提供了switch和foto，但是只是基于for和switch的扩展流程控制</p>
+	<h3>if-else条件控制</h3>
+	<p>写法为：</p>
+	<p>if 表达式 {} else {}</p>
+	<p>不像c++，这里的{}是不能省略的</p>
+	<p>有一种特殊的写法是if a:=19; a&gt8 {}这种写法的好处是a是一个在if块中的局部变量</p>
+	<h3>for循环控制</h3>
+	<p>go语言中只有一种循环控制语句，就是for，其基本格式为：</p>
+	<p>for 初始语句; 条件表达式; 结束语句 {}</p>
+	<p>这三个语句都是可以省略的(但;是有时可省，有时不可省)。所以虽然go没有while，但是可以模拟出来</p>
+	<p>for 条件表达式 {}<br/>
+	就相当于普通的while语句</p>
+	<p>for {}<br/>
+	就相当于无限循环</p>
+	<h3>for range(键值循环)</h3>
+	<p>go语言中可以用for range来实现c++中foreach的效果，去遍历数组，切片，字符串，map，通道等</p>
+	<p>基本写法为eg.:</p>
+	<p>for s, err := range str {}</p>
+	<p>其返回值有如下的规律：<br/>
+	1. 数组，切片，字符串会返回索引和值。<br/>
+	2. map会返回键值和值。<br/>
+	3. 通道只返回通道内的值。<br/>
+	</p>
+	<h3>switch条件控制</h3>
+	<p>基本写法为：</p>
+	<p>
+	switch 条件 {<br/>
+	case 值1:<br/>
+	case 值2:<br/>
+	default: <br/>
+	}
+	</p>
+	<p>有个很不常见的用法是在case里面可以写fallthrough，可以执行下面一个就算条件不满足的case</p>
+	<h3>golang的break语句</h3>
+	<p>Go语言的break语句除了cpp那种跳出当前循环的用法外，还可以指定一个标签来决定到底要跳出哪一层循环</p>
+	<p>就比如说：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+)
+
+func main() {
+loop:
+        for {
+                for i := 0; i &lt 10; i++ {
+                        fmt.Println(i)
+                        if i &gt 5 {
+                                break loop
+                        }
+                }
+        }
+        fmt.Println("跳出了外层循环")
+}
+输出结果为:
+0
+1
+2
+3
+4
+5
+6
+跳出了外层循环
+</pre>
+	</p>
+	<p>如果是普通的break不指定标签的话，将会无限循环</p>
+	<h3>goto(跳转到指定标签)</h3>
+	<p>这个也很少用，就是在程序的某个位置写一个标签，格式是：<br/>
+	标签1:<br/>
+	在程序中就可以：<br/>
+	goto 标签 1<br/>
+	进行跳转。<br/>
+	</p>
+	<p>go中也有continue和return语句。和C的一样</p>
+</body>
+</html>

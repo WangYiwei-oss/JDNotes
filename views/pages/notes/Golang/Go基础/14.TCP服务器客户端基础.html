@@ -1,0 +1,166 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>GoTCP服务器客户端入门</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>最简单的TCP服务器客户端</h1>
+	<h2>服务器</h2>
+	<p>用Go语言写一个TCP服务器是非常简单的，只需要三步：
+<ol>
+	<li>Listen监听</li>
+	<li>Accept等待建立连接</li>
+	<li>Send/Recv与客户端通信</li>
+</ol>
+	</p>
+	<p>如果还记得之前的用C++写的最简单的服务器，那Listen其实就是把{创建socket，bind，listen}这三步封装在了一起</p>
+	<p><strong>主要用到几个函数：</strong></p>
+	<p>net.Listen
+<pre class="definepre">
+函数原型：
+func Listen(network, address string)(Listener,error){}
+</pre>
+	</p>
+	<ul>
+		<li>network是指定协议类型"tcp","udp","udp4","ip"这些，我们做TCP服务器当然就是指定成tcp</li>
+		<li>address就是指定ip地址和端口"0.0.0.0:8000"</li>
+		<li>net.Listener是一个接口，看一下定义：
+<pre class="codepre">
+type Listener interface{
+	Accept()(Conn, error)	//Accept等待建立连接
+	Close() error	//关闭监听
+	Addr() Addr	//Addr返回listener的network address
+}
+</pre>
+		</li>
+	</ul>
+	<p>Listener.Accept()</p>
+	<ul>
+		<li>Listener.Accept()就是上面提到的Listener接口的一个函数。原型为Accept()(Conn, error)</li>
+		<li>net.Conn是一个接口：基本就是一个socket
+<pre class="codepre">
+type Conn interface{
+	Read(b []byte)(n int, err error)	//从connection中读数据
+	Write(b []byte)(n int, err error) 	//向connection中写数据
+	Close() error 	//关闭连接
+	LocalAddr() Addr 	//返回本地的network Address
+	RemoteAddr() Addr	//返回远端的network Address
+	SetDeadline(t time.Time) error
+	SetReadDeadline(t time.Time) error
+	SetWriteDeadline(t time.Time) error
+}
+</pre>
+		</li>
+		<li>net.Addr是一个接口：
+<pre class="codepre">
+type Addr interface{
+	Network() string	//network的名字，比如"tcp","udp"
+	String() string		//地址的string，比如"127.0.0.1:25"或"[2001:db8::1]:80"
+}
+</pre>
+		</li>
+	</ul>
+	<h3>写一个服务器</h3>
+<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "net"
+)
+
+func dealrw(conn net.Conn) { //这里不要传socket的引用。因为交给了另一个goroutine去用，要传值才保险
+        defer conn.Close() //不要忘记关闭客户端socket
+        for {
+                var buffer [1024]byte
+                n, err := conn.Read(buffer[:])
+                if err != nil {
+                        fmt.Println("Read Failed:", err)
+                        return //失败了返回for继续读
+                }
+                fmt.Println(conn.RemoteAddr().String(), string(buffer[:n]))
+                _, err = conn.Write([]byte("收到"))
+                if err != nil {
+                        fmt.Println("Write Failed", err)
+                        return
+                }
+        }
+
+}
+
+func main() {
+        listener, err := net.Listen("tcp", "0.0.0.0:80") //1.开启监听，传入通信类型和监听端口号，返回连接套接字
+        if err != nil {
+                fmt.Println("Listen Failed:", err)
+                return
+        }
+        defer listener.Close() //不要忘记关闭连接socket
+        for {
+                conn, err := listener.Accept() //2.等待别人建立连接，会阻塞，连接成功返回客户套接字
+                if err != nil {
+                        fmt.Println("Accept Failed", err)
+                        continue //连接失败了不要紧，返回for头部继续等待新的连入
+                }
+		go dealrw(conn) //3.把客户套接字传给新的goroutine去与客户端进行通信。本程序返回for头部继续等待新的连入
+        }
+}
+</pre>
+</p>
+	<h2>客户端</h2>
+	<p>客户端非常简单，只需要连接到服务器和收发数据两部就可以</p>
+	<p>需要用到的函数：</p>
+	<p>Dial函数原型:
+<pre class="definepre">
+func Dial(network, address string)(Conn, error){
+	var d Dialer
+	return d.Dial(network, address)
+}
+</pre>
+	</p>
+	<ul>
+		<li>network就是网络类型"tcp","udp","id"等</li>
+		<li>address就是要连接的地址，"127.0.0.1:80"这种</li>
+		<li>返回Conn是一个接口。基本就是一个socket</li>
+	</ul>
+	<h4>写一个客户端</h4>
+	<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "net"
+        "time"
+)
+
+func main() {
+        conn, err := net.Dial("tcp", "127.0.0.1:80") //1.与服务器建立连接
+        defer conn.Close()                           //记得关闭最后要关闭socket
+        if err != nil {
+                fmt.Println("Dial Failed:", err)
+        }
+        //2. 收发数据
+        for i := 0; i &lt 20; i++ {
+                _, err := conn.Write([]byte("你收到了吗"))
+                if err != nil {
+                        fmt.Println("Write Failed:", err)
+                        continue
+                }
+                var buffer [1024]byte
+                n, err := conn.Read(buffer[:])
+                if err != nil {
+                        fmt.Println("Read Failed", err)
+                        continue
+                }
+                fmt.Println(string(buffer[:n]))
+                time.Sleep(time.Second)
+        }
+}
+</pre>
+	</p>
+</body>
+</html>

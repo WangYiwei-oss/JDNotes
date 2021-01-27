@@ -1,0 +1,147 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>go与JSON</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>go与JSON</h1>
+	<p>JavaScript对象表示法(JSON)是一种发送和接受格式化信息的标准。JSON并不是唯一的标准，XML、ASN.1都是相似的标准，各自有各自的应用场景，但是JSON最为简单和用途广泛</p>
+	<p>Go通过标准库encoding/json、encoding.xml、encoding/asn1和其他的库对这些格式的编码和解码提供了非常好的支持，这些库都拥有相同的API。</p>
+	<h2>JSON简介</h2>
+	<p>JSON是JavaScript的值的Unicode编码，这些值包括字符串、数字、布尔、数组和对象。</p>
+	<p>JSON的数组是一个有序的元素序列，每个元素之间用,分割，两边用方括号括起来</p>
+	<p>Go中的数组和slice用JSON中的数组来编码</p>
+	<p>JSON中的对象是一个从字符串到值的映射，写成name:value对的序列，每个元素用,分割，两边使用花括号括起来</p>
+	<p>Go中的map和结构体用JSON中的对象来编码</p>
+	<p>JSON的格式如下：</p>
+	<table>
+		<thead>
+			<td>类型</td>
+			<td>写法</td>
+		</thead>
+		<tbody>
+		<tr>
+			<td>boolean</td>
+			<td>true</td>
+		</tr>
+		<tr class="d">
+			<td>number</td>
+			<td>-20.5</td>
+		</tr>
+		<tr>
+			<td>string</td>
+			<td>"你好"</td>
+		</tr>
+		<tr class="d">
+			<td>array</td>
+			<td>[true,1,"你好"]</td>
+		</tr>
+		<tr>
+			<td>object</td>
+			<td>{"year":1980,"medals":["gold","sliver"]}</td>
+		</tr>
+		</tbody>
+	</table>
+	<h2>go与JSON互转</h2>
+	<p>把Go的数据转为JSON通过json.Marshal来实现，需要提供需要转的值。会返回一个byte切片和一个err</p>
+	<p>要注意如果成员开头字母是小写，是不会被转为JSON的。如果就想要转为小写字母开头要使用成员的标签<br/>`json:"变量别名"`<br/>这种格式</p>
+	<p>json.Marshal是不带有任何格式化的JSON。如果想转成适合人类阅读的JSON格式，可以用json.MarshalIndent,这个函数还需要额外的两个输入，代表前缀和缩进字符</p>
+	<p>把JSON转成Go的数据结构可以用json.Unmarshal来实现。接收两个参数，一个byte切片，一个接收者(数据结构的指针)。返回一个err</p>
+	<p>下面是一个示例：
+<pre class="codepre">
+	package main
+
+import (
+        "encoding/json"
+        "fmt"
+)
+
+type People struct {
+        Name string
+        ID   int `json:"人的ID"`
+}
+type Student struct {
+        People
+        Books [5]int
+}
+
+type Book struct {
+        Books [5]int
+}
+
+func main() {
+        s1 := &ampStudent{People: People{Name: "我要胖到160", ID: 1500}, Books: [5]int{1, 2, 3, 4, 5}}
+        s2 := &ampStudent{People: People{Name: "张三", ID: 1500}, Books: [5]int{1, 2, 3, 4, 5}}
+        s3 := &ampStudent{People: People{Name: "李四", ID: 1500}, Books: [5]int{1, 2, 3, 4, 5}}
+        s := []*Student{s1, s2, s3}
+        fmt.Println(s[0], s[1], s[2])
+        data, err := json.Marshal(s)	//go转json
+        if err != nil {
+                fmt.Println("结构体转JSON出错")
+                return
+        }
+        fmt.Printf("%s\n", data)
+        data1, err1 := json.MarshalIndent(s, "", " ")	//json转go
+        if err1 != nil {
+                fmt.Println("结构体转格式化JSON出错")
+                return
+        }
+        fmt.Printf("%s\n", data1)
+        var cc []*Student	//定义接收者，需要一一对应，如果不对应会选择性忽略。通过合理地定义Go的数据类型，我们可以选择将哪部分JSON数据解码到结构体对象中，那些数据可以丢弃
+	var dd []*Book
+        json.Unmarshal(data, &ampcc)	//需要传入接收者的指针
+        fmt.Println(cc[0], cc[1], cc[2])
+        json.Unmarshal(data, &ampdd)
+        fmt.Println(dd[0], dd[1], dd[2])
+}
+</pre>
+	</p>
+	<p>输出结果为：
+<pre class="codepre">
+&amp{{我要胖到160 1500} [1 2 3 4 5]} &amp{{张三 1500} [1 2 3 4 5]} &amp{{李四 1500} [1 2 3 4 5]}
+[{"Name":"我要胖到160","人的ID":1500,"Books":[1,2,3,4,5]},{"Name":"张三","人的ID":1500,"Books":[1,2,3,4,5]},{"Name":"李四","人的ID":1500,"Books":[1,2,3,4,5]}]
+[
+ {
+  "Name": "我要胖到160",
+  "人的ID": 1500,
+  "Books": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ]
+ },
+ {
+  "Name": "张三",
+  "人的ID": 1500,
+  "Books": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ]
+ },
+ {
+  "Name": "李四",
+  "人的ID": 1500,
+  "Books": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ]
+ }
+]
+&amp{{我要胖到160 1500} [1 2 3 4 5]} &amp{{张三 1500} [1 2 3 4 5]} &amp{{李四 1500} [1 2 3 4 5]}
+&amp{[1 2 3 4 5]} &amp{[1 2 3 4 5]} &amp{[1 2 3 4 5]}
+
+</pre>
+	</p>
+</body>
+</html>

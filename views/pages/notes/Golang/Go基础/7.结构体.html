@@ -1,0 +1,150 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>结构体</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>自定义结构体</h1>
+	<p>结构体是将零个或多个任意类型的命名变量组合在一起的聚合数据类型</p>
+	<p>可以根据原有的类型造一个一模一样的类型，比如type myint int<br/>
+	这个的好处是，因为不能再给别的包的类型定义新的成员，所以可以通过再造一个类型的方式</p>
+	<p>还有一种是类型别名，与上述的概念完全不同，是给一个类型起了一个名字，类似c++的typedef。写法为type myint=int<br/>
+	上面的方法你用typeof会是myint，下面这种typeof仍然是int。
+	</p>
+	<h2>结构体定义</h2>
+	<p>写法如下：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+)
+
+type people struct {
+        Name string //定义string类型public的成员
+        id   int    //定义int类型private的成员
+}
+
+func main() {
+        var pang people
+        pang.Name = "我要胖到160"
+        pang.id = 15000
+        var shou *people = new(people) //定义一个类型指针，使用前记得分配空间
+        shou.Name = "瘦到120"            //语法糖，等价于(*shou).Name
+        fmt.Println(pang.Name, pang.id)
+        fmt.Println(shou.Name)
+}
+</pre>
+	</p>
+	<p>在go语言中成员变量的顺序对于结构体的同一性是很重要的。可以假装认为不同顺序的结构体就是不一样的结构体</p>
+	<p>成员的首字母是否大写决定了这个变量是否可以导出，大写了就类似于private</p>
+	<p>命名结构体类型s不可以定义一个拥有相同结构体类型s的成员变量。就是说自己不能包含自己。但是自己可以包含自己的指针，就比如说写一个链表的节点类，就需要包含自己的指针</p>
+	<p>结构体的零值由结构体成员的零值组成。</p>
+	<h2>结构体的字面量</h2>
+	<p>结构体可以通过字面量来初始化，第一种是不需要类型说明的字面量，但是数据的顺序必须正确，就比如对于people结构体pang := people{"我要胖到160",1500}<br/>
+	这种方式一般用于具有明确意义的结构体，比如image.point{x,y}和color.RGBA{r,g,b,a}</p>
+	<p>还有一种更常用的方法是通过键值对的方式，就比如pang := people{name:"我要胖到160",id:1500}</p>
+	<p>上面示例中new的方式可以简写为people := &amppeople{"我要胖到160"，1500}</p>
+	<p>结构体如果所有成员都是可比较的，那么结构体就可比较</p>
+	<h2>构造函数</h2>
+	<p>go没有构造函数，但是可以模拟出构造函数</p>
+	<p>返回一个结构体变量的函数就叫构造函数，约定这种函数的名字为new结构名</p>
+	<p>func newPerson()*person{}这样就是一个最简单的构造函数了，当然也可以不返回指针，但是结构体比较大的话可能会代价很大</p>
+	<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+)
+
+type people struct {
+        Name string //定义string类型的成员
+        id   int    //定义int类型的成员
+}
+
+func newPeople(n string, i int) *people {
+        r := &amppeople{n, i}
+        return r
+}
+
+func main() {
+        a := newPeople("我要胖到160", 15000)
+        fmt.Println(a.Name, a.id)
+}
+</pre>
+	</p>
+	<h2>匿名结构体与嵌套</h2>
+	<p>一些临时的结构体可以定义成匿名的</p>
+	<p>结构体可以嵌套,并且在嵌套时不需要各种.是可以直接一级访问的，下面是一个示例</p>
+	<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+)
+
+type people struct {
+        Name string //定义string类型的成员
+        id   int    //定义int类型的成员
+}
+
+type person struct {
+        people
+        sex string
+}
+
+func main() {
+        var s person
+        s.people.Name = "我要胖到160"
+        fmt.Println(s.Name)
+        s.Name = "我要胖到170"
+        fmt.Println(s.Name)
+}
+</pre>
+	</p>
+	<h2>继承</h2>
+	<p>Go语言没有继承的概念，但是可以模拟出来。写法上就是直接在子类里面写一个父类成员就可以了</p>
+	<p>这样子类可以直接使用.运算符调用父类的方法和成员。但初始化的时候要显示调用父类的初始化</p>
+	<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+)
+
+type people struct {
+        name string
+        age  int
+}
+
+type mayun struct {
+        people
+        money int
+}
+
+func NewPeople(n string, a int) *people {
+        return &amppeople{name: n, age: a}
+}
+
+func NewMayun(n string, a int, m int) *mayun {
+        var mm mayun
+        mm.people = *NewPeople(n, a)
+        mm.money = m
+        return &ampmm
+}
+
+func main() {
+        p := NewPeople("我要胖到160", 20)
+        m := NewMayun("马云", 20, 200000)
+        fmt.Println(*p, *m)
+}
+</pre>
+	</p>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>变量</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>变量的声明及赋值</h1>
+	<p>go语言变量的声明方式及赋值方式有以下几种</p>
+	<ol>
+		<li><strong>标准声明</strong>
+			<p>var 变量名 变量类型=变量值</p>
+			<p>例如，var a int = 5</p>
+		</li>
+		<li>
+			<strong>类型推导赋值</strong>
+			<p>var 变量名=变量值</p>
+			<p>例如 var a=5.0</p>
+		</li>
+		<li>
+			<strong>短变量声明</strong>
+			<p>变量名:=变量值</p>
+			<p>例如 a:=5</p>
+			<p>请注意只要见到:=就一定是一个声明语句，而不是一个赋值语句</p>
+		</li>
+	</ol>
+	<p>匿名变量用_来表示，就比如说函数返回了两个参数(go的函数是可以返回多个参数的)，如果你不想要某一个参数，就可以用_来占位</p>
+	<h3>常量</h3>
+	<p>声明的格式是const 常量名=常量，只能用标准声明或者类型推导声明，不能用短变量声明</p>
+	<p>可以批量声明const变量</p>
+	<p>比如说:
+<pre class="definepre">
+const(
+	a=5
+	b=4
+)
+</pre>
+	</p>
+	<p>批量声明的时候，值可以省略，会默认与上面一行的常量值相等</p>
+	<h4>常量计数器iota</h4>
+	<p>iota是go语言的常量计数器，只能在常量的表达式中使用</p>
+          <p>iota在const关键字出现时重置为0,const中每新增一行常量声明将使iota    加一。可以理解为const语句中的行索引,注意是行的计数器</p>
+          <p>比如说：
+<pre class="definepre">
+const(
+        a=iota //a=0
+        b=iota //b=1
+        c=iota //c=3
+)
+</pre>
+          </p>
+</body>
+</html>

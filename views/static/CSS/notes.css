@@ -1,0 +1,69 @@
+table{
+	border-collapse:collapse;
+	text-align:center;
+	margin-left:30px;
+	margin-top:30px;
+	margin-bottom:30px;
+}
+table thead{
+	background-color:rgb(100,100,100);
+}
+table thead td{
+	color:white;
+	font-weight:bold;
+	padding:5px;
+	font-size:22px;
+}
+table td{
+	border:1px solid black;
+	padding:3px;
+}
+table .d{
+	background-color:rgb(220,220,220);
+}
+p{
+	margin-top:5px;
+	margin-bottom:5px;
+}
+h1{
+	text-align:center;
+	font-size:40px;
+	letter-spacing:0.3em;
+}
+h2{
+	font-size:30px;
+	letter-spacing:0.2em;
+}
+h3{
+	font-size:25px;
+}
+h4{
+	font-size:22px;
+}
+pre{
+	white-space:pre-wrap;
+	word-wrap:break-word;
+}
+.codepre{
+	padding:20px;
+	font-size:19px;
+	line-height:1.3em;
+	background-color:rgba(150,200,190,0.25);
+	border-radius:10px;
+}
+.definepre{
+	padding:20px;
+        font-size:18px;
+	font-weight:bold;
+	line-height:1.1em;
+	color:#200772;
+        border-radius:10px;
+	border:1px dotted black;
+}
+.kuang{
+	border-radius:10px;
+	border:1px dashed green;
+	padding:20px;
+	margin-top:10px;
+	margin-bottom:10px;
+}

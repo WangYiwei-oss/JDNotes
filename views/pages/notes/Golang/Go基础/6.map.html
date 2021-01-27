@@ -1,0 +1,102 @@
+<!-->Golang<-->
+<!-->Go语言基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>map</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>map</h1>
+	<p>hash表(散列表)。是一个拥有键值对元素的无序集合。在这个集合中，键的值是唯一的，键对应的值可以通过键来获取、更新或移除。数据类型map就是散列表的引用。</p>
+	<h2>map的定义</h2>
+	<p>map的类型是map[K]V，其中K是键的类型，V是值的类型，键和值的类型可以不相同</p>
+	<p>通常来说想要使用map必须要初始化map，因为map是一个引用类型，如果不初始化将无法使用</p>
+	<h3>make函数初始化</h3>
+	<p>可以使用make函数初始化一个map，基本的格式为：<br/>
+	make(map[K]v, cap)<br/>
+	第一个参数是map的类型，cap表示map的容量，不是必须的，因为map的容量可以是零，但最好能指定一个合适的值，可以避免后面再扩容。扩容就会rehash，就会慢</p>
+	<h3>字面量初始化</h3>
+	<p>也可以使用字面量来创建一个带初始化键值对元素的字典</p>
+	<p>
+	m := map[int]string{<br/>
+	1001: "王二",<br/>
+	1002: "李四",<br/>
+	}</p>
+	<h3>访问map的元素与查找元素</h3>
+	<p>map的元素的访问可以通过下标的方式[]，会返回值和元素是否存在</p>
+	<p>由于访问到没有的元素第二个返回值会返回false，可以利用这一点来查找元素</p>
+	<p>下面是一个示例
+<pre class="codepre">
+a := map[int]string{
+        100: "王五",
+        120: "李四",
+        130: "赵二",
+}
+fmt.Println(a[100]) //下标运算符来访问某个键的值
+//通过第二个返回的参数来实现map的查找
+_, b := a[101]
+if b {
+        fmt.Println("101存在")
+} else {
+        fmt.Println("101不存在")
+}
+
+运行结果为：
+王五
+101不存在
+</pre>
+	</p>
+	<h3>删除map的元素</h3>
+	<p>使用内置函数delete来从字典中根据键移除一个元素，如果本来就没有这个键，那delete不会做任何操作，并返回值的零值</p>
+	<p>delete(a,100)    //移除字典a中的键为100的元素</p>
+	<h3>遍历map</h3>
+	<p>遍历map可以使用for range循环，由于map的元素顺序是随机的，所以遍历的结果每次可能都不一样</p>
+	<h3>map的零值</h3>
+	<p>map的零值是nil，也就是没有引用任何散列表</p>
+	<p>大多数的map操作都可以安全地在map的nil上执行，包括查找，删除，len，for range循环。但是向零值map中设置元素会导致错误</p>
+	<p>
+<pre class="codepre">
+var a map[int]string
+fmt.Println(a==nil)
+fmt.Println(len(a))
+
+运行结果为：
+true
+0
+</pre>
+	</p>
+	<h3>map的键必须支持==比较</h3>
+	<p>map的键必须支持==，用以比较是否在map中存在。所以如果一个map的键是一个我们自己定义的结构体或是无法比较的类型(比如slice)，或者我们不想用==来作为比较的条件该怎么办呢？我们可以分成两步来做，第一步是定义一个一个函数用来将不可比较的类型映射成可比较的类型。比如说：</p>
+	<p>
+<pre class="codepre">
+a := [...]int{1, 2, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+b := a[0:3]
+c := a[3:6]
+d := a[6:9]
+e := a[9:]
+/*s := map[[]int]string{        //这里会报错，[]int是一个invaild类型，就是因为切片之间是不能比较的
+        b: "王二",
+        c: "刘六",
+}*/
+s := map[int]string{
+        k(b): "王二",
+}
+s[k(c)] = "溜溜"
+s[k(d)] = "赵四"
+s[k(e)] = "徐七"
+for aa, bb := range s {
+        fmt.Println(aa, bb)
+}
+fmt.Println(s[k(b)])
+
+运行结果为：
+146 溜溜
+545 赵四
+944 徐七
+溜溜
+</pre>
+	</p>
+	<p>可以看到通过k函数为桥梁，间接地使用slice为键值构造了map</p>
+</body>
+</html>

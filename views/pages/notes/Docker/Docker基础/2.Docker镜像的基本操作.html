@@ -1,0 +1,146 @@
+<!-->Docker<-->
+<!-->Docker基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Docker镜像基本操作</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Docker的镜像基本操作</h1>
+	<h3>搜索一个镜像</h3>
+	<p>用以下的命令去搜索alpine(一种linux发行版)：
+<pre class="definepre">
+docker search alpine
+
+运行结果为：
+NAME                                   DESCRIPTION                                     STARS               OFFICIAL            AUTOMATED
+alpine                                 A minimal Docker image based on Alpine Linux…   6893                [OK]
+mhart/alpine-node                      Minimal Node.js built on Alpine Linux           475
+anapsix/alpine-java                    Oracle Java 8 (and 7) with GLIBC 2.28 over A…   454                                     [OK]
+frolvlad/alpine-glibc                  Alpine Docker image with glibc (~12MB)          247                                     [OK]
+gliderlabs/alpine                      Image based on Alpine Linux will help you wi…   183
+alpine/git                             A  simple git container running in alpine li…   154                                     [OK]
+mvertes/alpine-mongo                   light MongoDB container                         116                                     [OK]
+yobasystems/alpine-mariadb             MariaDB running on Alpine Linux [docker] [am…   74                                      [OK]
+alpine/socat                           Run socat command in alpine container           60                                      [OK]
+kiasaki/alpine-postgres                PostgreSQL docker image based on Alpine Linux   45                                      [OK]
+davidcaste/alpine-tomcat               Apache Tomcat 7/8 using Oracle Java 7/8 with…   42                                      [OK]
+jfloff/alpine-python                   A small, more complete, Python Docker image …   37                                      [OK]
+byrnedo/alpine-curl                    Alpine linux with curl installed and set as …   33                                      [OK]
+hermsi/alpine-sshd                     Dockerize your OpenSSH-server with rsync and…   32                                      [OK]
+zenika/alpine-chrome                   Chrome running in headless mode in a tiny Al…   26                                      [OK]
+hermsi/alpine-fpm-php                  FPM-PHP 7.0 to 8.0, shipped along with tons …   25                                      [OK]
+etopian/alpine-php-wordpress           Alpine WordPress Nginx PHP-FPM WP-CLI           24                                      [OK]
+bashell/alpine-bash                    Alpine Linux with /bin/bash as a default she…   18                                      [OK]
+davidcaste/alpine-java-unlimited-jce   Oracle Java 8 (and 7) with GLIBC 2.21 over A…   13                                      [OK]
+spotify/alpine                         Alpine image with `bash` and `curl`.            11                                      [OK]
+roribio16/alpine-sqs                   Dockerized ElasticMQ server + web UI over Al…   11                                      [OK]
+cfmanteiga/alpine-bash-curl-jq         Docker Alpine image with Bash, curl and jq p…   6                                       [OK]
+hermsi/alpine-varnish                  Dockerize Varnish upon a lightweight alpine-…   3                                       [OK]
+bushrangers/alpine-caddy               Alpine Linux Docker Container running Caddys…   1                                       [OK]
+goodguykoi/alpine-curl-internal        simple alpine image with curl installed no C…   0                                       [OK]
+</pre>
+	</p>
+	<p>那么显示出来的就是Docker Hub上面提供的所有的相关镜像</p>
+	<h3>下载镜像</h3>
+	<p>现在想要下载第一个(名字为alpine)的镜像：
+<pre class="definepre">
+docker pull alpine
+
+运行结果为:
+Using default tag: latest
+latest: Pulling from library/alpine
+188c0c94c7c5: Pull complete
+Digest: sha256:c0e9560cda118f9ec63ddefb4a173a2b2a0347082d7dff7dc14272e7841a5b5a
+Status: Downloaded newer image for alpine:latest
+docker.io/library/alpine:latest
+</pre>
+	</p>
+	<p>可以看到下载成功了，关注一下最后一行。表示是这个镜像的结构<br/>
+	${registry_name}/${repository_name}/${image_name}:${tag_name}<br/>
+	也就是远端仓库的地址/仓库名字/镜像名字:标签
+	</p>
+	<p>如果不是官方仓库，要做私有仓库的话，在pull的时候镜像结构必须写完整</p>
+	<h3>查看所有的本地镜像</h3>
+	<p>查看所有的本地镜像可以使用命令：
+<pre class="definepre">
+docker images
+docker image ls
+
+运行结果：
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+web                 latest              a10a815171fd        12 days ago         72.9MB
+alpine              latest              d6e46aa2470d        2 weeks ago         5.57MB
+nginx               latest              f35646e83998        3 weeks ago         133MB
+ubuntu              latest              9140108b62dc        6 weeks ago         72.9MB
+hello-world         latest              bf756fb1ae65        10 months ago       13.3kB
+</pre>
+	</p>
+	<p>可以看到我们刚才pull的alpine和hello-world还有几个我自己之前pull的镜像。显示了镜像名-标签-镜像ID-创建时间和大小</p>
+	<h3>给镜像打标签</h3>
+	<p>可以更改镜像的标签：
+<pre class="definepre">
+docker tag 镜像ID 新镜像的完整结构
+docker tag a10a815171fd wangyiwei/test:v1.0.0
+
+再查看本地镜像：
+test                 v1.0.0              a10a815171fd        13 days ago         72.9MB
+web                  latest              a10a815171fd        13 days ago         72.9MB
+</pre>
+	</p>
+	<p>可以看到新命名的标签，并且镜像的ID是一样的，镜像ID其实就是一个hash</p>
+	<p>要注意这个命名是有规范的，wangyiwei是我在DockerHub上面的仓库的名称，而test是我新创建的Repository，只有遵循这个命名才可以push自己镜像上去</p>
+	<h3>推送镜像</h3>
+	<p>推送镜像：
+<pre class="definepre">
+docker push 镜像结构
+docker push docker.io/wangyiwei/test:v1.0.0
+
+The push refers to repository [docker.io/wangyiwei/test]
+5d9b49672bad: Pushed
+ab3644448e13: Pushed
+782f5f011dda: Pushed
+90ac32a0d9ab: Pushed
+d42a4fdf4b2a: Pushed
+v1.0.0: digest: sha256:40b22542d2513f091415d4b8d54b93564feb76421d33860917e9626a0c92a732 size: 1358
+</pre>
+	</p>
+	<p>可以看到push成功了，并且在DockerHub上面可以查看到刚才推送的镜像。如果提示请求被拒绝了，请docker login</p>
+	<img src="./pic/docker推送.png" alt="">
+	<h3>删除镜像</h3>
+	<p>删除镜像：
+<pre class="definepre">
+docker rmi 镜像名字:tag
+docker rmi test:v1.0.0
+
+运行结果为：
+Untagged: test:v1.0.0
+</pre>
+	</p>
+	<p>此时再查看所有镜像，已经看不到这个镜像了，但他其实还没有真正的被删除，因为他的镜像层有其他的镜像在依赖，所以如果再把它依赖的镜像删除：
+<pre class="definepre">
+docker rmi web:latest
+Untagged: web:latest
+Deleted: sha256:a10a815171fd4cd2258bc19435fe7282644a44044559842ffdc301f8662d728a
+Deleted: sha256:2cd7ec74ec23fd4a412a60996e8e8f1755d0b27e108005912e74cf43c3f4fe10
+Deleted: sha256:48b9fee3b27e59ccb4adfbd6eb73148c6cd6cf1e2a7639afdc58a3c32a369f21
+Deleted: sha256:6c068214b00f102dd997f6cca67e364c1457850aba45842733c23cf3d8207c3a
+Deleted: sha256:03c25266e9eeb0d672d4deaf5f7325e01d58d60398a734556c802169ec4683e8
+</pre>
+	</p>
+	<p>可以看到这次在untagged后，由于四个镜像层都没有依赖的镜像了，所以对其进行了删除</p>
+	<p>或者直接用命令docker rmi -f 镜像ID 即可删除此ID的所有镜像,-f表示force强制删除。如果不加的话，会由于有依赖而导致不能删除</p>
+	<h3>Docker镜像特性</h3>
+	<img src="./pic/docker结构.png" alt="">
+	<p>docker镜像特性</p>
+	<ul>
+		<li>Docker镜像位于bootfs之上</li>
+		<li>每一层镜像的下面一层称为其父镜像</li>
+		<li>第一层镜像为Base Image(是操作系统)</li>
+		<li>容器在最顶层，并且是可写的。</li>
+		<li>只有容器层是可写的，其余的层都是Readonly</li>
+		<li>Docker将readonly的FS层称作image</li>
+	</ul>
+</body>
+</html>
