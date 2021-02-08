@@ -1,0 +1,189 @@
+<!-->MySQL<-->
+<!-->MySQL基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>表与数据的操作</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>表与数据的操作</h1>
+	<div class="kuang">
+	<h2>创建表</h2>
+	<p>创建表的时候，必须提供的只有三个东西：表的名字和第一列的名字和类型</p>
+	<p>但是还有许多可选的设置，直接来看一个比较复杂的创建表的语句：
+<pre class="codepre">
+mysql&gt CREATE TABLE IF NOT EXISTS test2
+    -&gt (
+    -&gt id int NOT NULL AUTO_INCREMENT,
+    -&gt name char(50) NOT NULL,
+    -&gt address char(50) NULL,
+    -&gt grade int NOT NULL DEFAULT 1,
+    -&gt PRIMARY KEY(id)
+    -&gt )ENGINE=InnoDB;
+查看一下创建的结果：
+show columns from test2;
++---------+----------+------+-----+---------+----------------+
+| Field   | Type     | Null | Key | Default | Extra          |
++---------+----------+------+-----+---------+----------------+
+| id      | int      | NO   | PRI | NULL    | auto_increment |
+| name    | char(50) | NO   |     | NULL    |                |
+| address | char(50) | YES  |     | NULL    |                |
+| grade   | int      | NO   |     | 1       |                |
++---------+----------+------+-----+---------+----------------+
+</pre>
+	</p>
+	<p>接下来进行一些说明：</p>
+	<p>CREATE TABLE是创建表的关键字</p>
+	<p>IF NOT EXISTS的意思是如果不存在才创建，存在了就不做任何事。可以省略</p>
+	<p>括号里面每一列之间用逗号分割开</p>
+	<p>看第一个列，指定了列名为id。列类型为int。NOT NULL指定了数据不能为空(NULL),NOT NULL可省略，默认为NULL(可空)。AUTO_INCREMENT是说每新创建一行，id就会自增1(1、2、3、4、5、6...)，可以省略。</p>
+	<p>第三个列其实就是可以为空</p>
+	<p>第四个列还指定了DEFAULT，意思是指定了默认值，如果在插入数据时没有赋值，就会默认为1。可以省略</p>
+	<p>PRIMARY KEY(id)是指定了id列为主键，主键不一定非得是一列，也可以是好几列，那就需要括号里列与列之间用逗号隔开。可以省略，就不指定主键</p>
+	<div class="kuang">
+	<p>ENGINE=InnoDB是用来指定存储引擎的。MySQL有三种引擎：</p>
+	<ul>
+		<li>InnoDB: 一种可靠的事务处理引擎，不支持全文本搜索</li>
+		<li>MyISAM: 一种性能极高的引擎，支持全文本搜索，但不支持事物处理</li>
+		<li>MEMORY: 在功能上等同于MyISAM，但是数据是储存在内存中的，所以适合用来创建临时表</li>
+	</ul>
+	<p>这一条可以省略，如果不指定引擎的话，默认使用MyISAM</p>
+	</div>
+	<h2>更新表</h2>
+	<p>更新表的关键字为ALTER TABLE。后面加上操作，操作其实就是添加列，删除列，定义外键</p>
+	<h3>添加列操作</h3>
+	<p>ADD
+<pre class="codepre">
+在上面创建的表中添加一列电话号码：
+mysql&gt ALTER TABLE test2
+    -&gt ADD number char(50) NOT NULL Default 111111;
+<p>可以看到同样可以指定列的属性</p>
+</pre>
+	</p>
+	<h3>删除列操作</h3>
+	<p>DROP COLUMN
+<pre class="codepre">
+再把刚才添加的列删了：
+mysql&gt ALTER TABLE test2
+    -&gt DROP COLUMN number;
+</pre>
+	</p>
+	<h3>定义外键</h3>
+	<p>通过FROEIGN KEY()来设置外键，以后再展开</p>
+	<h2>删除表</h2>
+	<p>DROP TABLE 表名</p>
+	<h2>重命名表</h2>
+	<p>RENAME TABLE 旧表名 TO 新表名</p>
+	</div>
+	<div class="kuang">
+	<h2>插入数据</h2>
+	<p>插入操作可分为以下四种：</p>
+	<ul>
+		<li>插入完整的行</li>
+		<li>插入行的一部分</li>
+		<li>插入多行</li>
+		<li>将检索结果插入行</li>
+	</ul>
+	<p>插入完整的行：
+比如我的这个表：
+mysql&gt show columns from vent;
++---------+------+------+-----+---------+-------+
+| Field   | Type | Null | Key | Default | Extra |
++---------+------+------+-----+---------+-------+
+| vent_id | int  | YES  |     | NULL    |       |
+| name    | text | YES  |     | NULL    |       |
++---------+------+------+-----+---------+-------+
+想要插入一行数据，可以使用：
+mysql&gt INSERT INTO vent
+    -&gt VALUES (10,'wanqing');
+或者使用指定插入列的更安全的方法：
+mysql&gt INSERT INTO vent(vent_id,name)
+    -&gt VALUES (10,'wanqing');
+	</p>
+	<h2>插入一行的部分数据</h2>
+	<p>不想插入数据的列可以用NULL</p>
+	<h2>插入多行</h2>
+	<p>只需要在VALUES后面跟上多个括号即可，括号之间用逗号隔开</p>
+	<p>
+mysql&gt INSERT INTO vent(vent_id,name)
+    -&gt VALUES (1,'wanqing'),
+    -&gt (2,'guoyao');
+	</p>
+	<h2>插入检索出的数据</h2>
+	<p>其实就是嵌套SELECT语句，当然这个SELECT语句是可以被WHERE等修饰的</p>
+	<p>下面是一个例子，我有这样一个表：
+<pre class="codepre">
+mysql&gt select * from vent;
++---------+----------+
+| vent_id | name     |
++---------+----------+
+|       1 | wanqing  |
+|       2 | alading  |
+|       3 | guoyao   |
+|       4 | maikelin |
+|      10 | NULL     |
+|      10 | guoyao   |
++---------+----------+
+我想把vent_id小于5的拷贝到另一个表vent2中去：
+mysql&gt INSERT INTO vent2(vent_id,name)
+    -&gt SELECT vent_id,name
+    -&gt FROM vent
+    -&gt WHERE vent_id&lt5;
+检查vent2中的数据：
+mysql&gt select * from vent2;
++---------+----------+
+| vent_id | name     |
++---------+----------+
+|       1 | wanqing  |
+|       2 | alading  |
+|       3 | guoyao   |
+|       4 | maikelin |
++---------+----------+
+</pre>
+	</p>
+	<h2>更改数据</h2>
+	<p>更改数据的时候一定要非常小心，因为一不小心就会更新所有的行</p>
+	<p>更改数据一般通过UPDATE和WHERE的配合来实现</p>
+	<p>
+<pre class="codepre">
+比如我有这样的一个表：
+mysql&gt select * from vent;
++---------+----------+
+| vent_id | name     |
++---------+----------+
+|       1 | wanqing  |
+|       2 | alading  |
+|       3 | guoyao   |
+|       4 | maikelin |
+|      10 | NULL     |
++---------+----------+
+我想把vent_id=10的那一行名字改一下：
+mysql&gt UPDATE vent
+    -&gt SET name='xishu'
+    -&gt WHERE vent_id=10;
+查看一下表的数据:
+mysql&gt select * from vent;
++---------+----------+
+| vent_id | name     |
++---------+----------+
+|       1 | wanqing  |
+|       2 | alading  |
+|       3 | guoyao   |
+|       4 | maikelin |
+|      10 | xishu    |
++---------+----------+
+</pre>
+	</p>
+	<h2>删除行</h2>
+	<p>删除行用DELETE语句和WHERE的配合。使用的时候同样要非常小心，因为一不小心就会删除所有的行</p>
+	<p>
+<pre class="codepre">
+比如我要删除上面的vent_id为10的行：
+mysql&gt DELETE FROM vent
+    -&gt WHERE vent_id=10;
+</pre>
+	</p>
+	</div>
+</body>
+</html>

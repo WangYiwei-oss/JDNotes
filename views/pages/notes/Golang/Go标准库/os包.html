@@ -1,0 +1,532 @@
+<!-->Golang<-->
+<!-->Go标准库<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>os包</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>os包</h1>
+	<h2>1. 一般操作</h2>
+	<h2>2. 操作File对象</h2>
+	<h3>2.1 File结构体</h3>
+	<p>通过os包做文件操作，最重要的结构体就是File，用来表示打开的文件的描述符。File可以是一个文件，也可以是一个文件夹</p>
+	<p>里面是一个file类型的指针，存着一些打开方式，路径，权限等信息</p>
+	<h3>2.2 可以通过几个函数来得到一个File对象</h3>
+	<div class="kuang">
+	<p><strong>新建文件：</strong>
+<pre class="definepre">
+func Create(name string)(file *File,err error)
+</pre>
+	</p>
+	<p>这里默认使用模式0666(任何人都可以读写，但不能执行)创建并打开文件</p>
+	<p>
+<pre class="definepre">
+func NewFile(fd uintptr, name string) *File
+</pre>
+	</p>
+	<p>使用给出的标准Unix文件描述符和名字创建一个新文件</p>
+	<p>os包给出了三个文件描述符：
+<pre class="definepre">
+var (
+    Stdin  = NewFile(uintptr(syscall.Stdin), "/dev/stdin")
+    Stdout = NewFile(uintptr(syscall.Stdout), "/dev/stdout")
+    Stderr = NewFile(uintptr(syscall.Stderr), "/dev/stderr")
+)
+</pre>
+	</p>
+	<p>Stdin,Stdout,Stderr分别是指向标准输入，标准输出，标准错误输出的文件描述符</p>
+	</div>
+	<div class="kuang">
+	<p><strong>打开文件：</strong>
+<pre class="definepre">
+func Open(name string)(file *File,err error)
+</pre>
+	</p>
+	<p>以只读的方式打开一个文件，文件描述符具有O_RDONLY模式</p>
+	<p>
+<pre class="definepre">
+func OpenFile(name string, flag int, perm FileMode)(file *File,err error)
+</pre>
+	</p>
+	<p>OpenFile是一个更一般性的文件打开函数。可以设置打开方式和指定的模式。flag就是指定的模式</p>
+	<p>flag是一个int。有如下可选项</p>
+	<table>
+		<thead>
+		<tr>
+			<td>flag</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+			<td>O_RDONLY</td>
+			<td>只读</td>
+		</tr>
+		<tr>
+			<td>O_WRONLY</td>
+			<td>只写</td>
+		</tr>
+		<tr>
+			<td>O_RDWR</td>
+			<td>读写</td>
+		</tr>
+		<tr>
+			<td>O_APPEND</td>
+			<td>追加写入</td>
+		</tr>
+		<tr>
+			<td>O_CREATE</td>
+			<td>文件不存在时创建</td>
+		</tr>
+		<tr>
+			<td>O_EXCL</td>
+			<td>和O_CREATE配合使用，创建的文件必须不存在</td>
+		</tr>
+		<tr>
+			<td>O_SYNC</td>
+			<td>打开同步I/O</td>
+		</tr>
+		<tr>
+			<td>O_TRUNC</td>
+			<td>如果可能，打开时晴空文件</td>
+		</tr>
+		</tbody>
+	</table>
+	<p>FileMode代表文件的模式和权限位，在所有的操作系统中都有相同的含义。</p>
+	<p>FileMode有几个比较重要的位：
+<pre class="definepre">
+const (
+    // 单字符是被String方法用于格式化的属性缩写。
+    ModeDir        FileMode = 1 &lt&lt (32 - 1 - iota) // d: 目录
+    ModeAppend                                     // a: 只能写入，且只能写入到末尾
+    ModeExclusive                                  // l: 用于执行
+    ModeTemporary                                  // T: 临时文件（非备份文件）
+    ModeSymlink                                    // L: 符号链接（不是快捷方式文件）
+    ModeDevice                                     // D: 设备
+    ModeNamedPipe                                  // p: 命名管道（FIFO）
+    ModeSocket                                     // S: Unix域socket
+    ModeSetuid                                     // u: 表示文件具有其创建者用户id权限
+    ModeSetgid                                     // g: 表示文件具有其创建者组id的权限
+    ModeCharDevice                                 // c: 字符设备，需已设置ModeDevice
+    ModeSticky                                     // t: 只有root/创建者能删除/移动文件
+    // 覆盖所有类型位（用于通过&amp获取类型位），对普通文件，所有这些位都不应被设置
+                 <tr>
+                        <td>O_EXCL</td>
+                        <td>和O_CREATE配合使用，创建的文件必须不存在</td>
+                </tr>
+                <tr>
+                        <td>O_SYNC</td>
+                        <td>打开同步I/O</td>
+                </tr>
+                <tr>
+                        <td>O_TRUNC</td>
+                        <td>如果可能，打开时晴空文件</td>
+                </tr>
+                </tbody>
+        </table>
+        <p>FileMode代表文件的模式和权限位，在所有的操作系统中都有相同的含义。</p>
+        <p>FileMode有几个比较重要的位：
+<pre class="definepre">
+const (
+    // 单字符是被String方法用于格式化的属性缩写。
+    ModeDir        FileMode = 1 &lt&lt (32 - 1 - iota) // d: 目录
+    ModeAppend                                     // a: 只能写入，且只能写入到末尾
+    ModeExclusive                                  // l: 用于执行
+    ModeTemporary                                  // T: 临时文件（非备份文件）
+    ModeSymlink                                    // L: 符号链接（不是快捷方式文件）
+    ModeDevice                                     // D: 设备
+    ModeNamedPipe                                  // p: 命名管道（FIFO）
+    ModeSocket                                     // S: Unix域socket
+    ModeSetuid                                     // u: 表示文件具有其创建者用户id权限
+    ModeSetgid                                     // g: 表示文件具有其创建者组id的权限
+    ModeCharDevice                                 // c: 字符设备，需已设置ModeDevice
+    ModeSticky                                     // t: 只有root/创建者能删除/移动文件
+    // 覆盖所有类型位（用于通过&amp获取类型位），对普通文件，所有这些位都不应被设置   ModeType = ModeDir | ModeSymlink | ModeNamedPipe | ModeSocket | ModeDevice
+    ModePerm FileMode = 0777 // 覆盖所有Unix权限位（用于通过&amp获取类型位）
+)
+</pre>
+	</p>
+	<p>除了这些位，还有标准Unix rwxrwxrwx权限的九个不重要的位。就比如说0777表示所有用户都可以读、写、执行</p>
+	<p>FileMode还有几个方法可以调用：</p>
+	<table>
+		<thead>
+		<tr>
+			<td>方法</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>func(m FileMode)IsDir()bool</td>
+			<td>返回m是否是一个目录</td>
+		</tr>
+		<tr>
+			<td>func (m FileMode)IsRegular()bool</td>
+			<td>返回m是否是一个普通文件</td>
+		</tr>
+		<tr>
+			<td>func(m FileMode)Perm()FileMode</td>
+			<td>返回m的Unix权限位</td>
+		</tr>
+		<tr>
+			<td>func (m FileMode)String()string</td>
+			<td>把文件模式用string的形式表示</td>
+		</tr>
+
+	</table>
+	</div>
+	<h3>2.3 操作File对象</h3>
+	<div class="kuang">
+	<p>先看一下提供文件信息的接口FileInfo：
+<pre class="definepre">
+type FileInfo interface {
+    Name() string       // 文件的名字（不含扩展名）
+    Size() int64        // 普通文件返回值表示其大小；其他文件的返回值含义各系统不同
+    Mode() FileMode     // 文件的模式位
+    ModTime() time.Time // 文件的修改时间
+    IsDir() bool        // 等价于Mode().IsDir()，返回这个文件是不是一个目录
+    Sys() interface{}   // 底层数据来源（可以返回nil）
+}
+</pre>
+	</p>
+	</div>
+	<div class="kuang">
+	<p>取得了一个File对象后就可以对File对象进行操作，os包中定义了许多File的方法</p>
+	<table>
+		<thead>
+		<tr>
+			<td>函数原型</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+			<td>func (f*File) Name() string</td>
+			<td>返回文件名称</td>
+		</tr>
+		<tr>
+			<td>func (f*File)Stat()(fi FileInfo,err error)</td>
+			<td>返回文件的文件信息(FileInfo类型)</td>
+		</tr>
+		<tr>
+			<td>func (f*File) Fd() uintptr</td>
+			<td>返回文件对性的整数类型的Unix文件描述符</td>
+		</tr>
+		<tr>
+			<td>func (f*File) Chdir() error</td>
+			<td>将当前工作目录修改为f，这里的f必须是一个目录</td>
+		</tr>
+		<tr>
+			<td>func (f*File)Chmod(mode FileMode) error</td>
+			<td>修改文件的模式</td>
+		</tr>
+		<tr>
+			<td>func (f*File)Chown(uid, gid int) error</td>
+			<td>修改文件的用户ID和组ID</td>
+		</tr>
+		<tr>
+			<td>func (f*File)Readdir(n int)(fi []FileInfo, err error)</td>
+			<td>读取文件夹f下的所有文件的信息</td>
+		</tr>
+		<tr>
+			<td>func (f*File)Readdirnames(n int)(names []string,err error)</td>
+			<td>读取文件夹f下的所有文件的名字</td>
+		</tr>
+		<tr>
+			<td>func (f*File)Truncate(size int64) error</td>
+			<td>改变文件的大小</td>
+		</tr>
+		<tr>
+			<td><strong>func (f*File)Read(b []byte)(n int,err error)</strong></td>
+			<td>读取最多len(b)字节数据并写入b。它返回读取的字节数和错误。</td>
+		</tr>
+		<tr>
+			<td><strong>func (f*File)ReadAt(b []byte, off int64)(n int, err error)</strong></td>
+			<td>从指定位置开始读取</td>
+		</tr>
+		<tr>
+			<td><strong>func (f*File)Write(b []byte)(n int, err error)</strong></td>
+			<td>向文件写入b。返回写入的字节数</td>
+		</tr>
+		<tr>
+			<td><strong>func (f*File)WriteString(s string)(ret int, err error)</strong></td>
+			<td>Write的写入string版本</td>
+		</tr>
+		<tr>
+			<td><strong>func (f*File)WriteAt(b []byte, off int64)(n int, err error)</strong></td>
+			<td>在指定位置写入数据</td>
+		</tr>
+		<tr>
+			<td>func (f*File)Seek(offset int64, whence int)(ret int64, err error)</td>
+			<td>设置下一次读/写的位置。offset为相对偏移量，whence决定相对位置：0为相对文件开头，1为相对当前位置，2为相对文件结尾。它返回新的偏移量(相对开头)和可能的错误</td>
+		</tr>
+		<tr>
+			<td>func (f*File) Sync()(err error)</td>
+			<td>递交文件的当前内容并进行稳定的存储。就是保存文件</td>
+		</tr>
+		<tr>
+			<td><strong>func (f*File)Close()</strong></td>
+			<td>关闭文件，使文件不能用语读写。推荐用defer</td>
+		</tr>
+		</tbody>
+	</table>
+	</div>
+	<h2>3. 与文件有关的其他操作</h2>
+	<div class="kuang">
+	<table>
+		<thead>
+		<tr>
+			<td>函数原型</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>func Stat(name string)(fi FileInfo, err error)</td>
+			<td>返回name路径的文件的文件信息。如果指定的文件对象是一个符号链接，会返回该符号链接的信息，并尝试跳转该链接</td>
+		</tr>
+		<tr>
+			<td>func Lstat(name string)(fi FileInfo, err error)</td>
+			<td>跟Stat一样，但不会尝试跳转</td>
+		</tr>
+		<tr>
+			<td>func IsPathSeparator(c uint8)bool</td>
+			<td>返回字符c是否是一个路径分隔符'/'</td>
+		</tr>
+		<tr>
+			<td>func Getwd()(dir string,err error)</td>
+			<td>返回当前工作目录</td>
+		</tr>
+		<tr>
+			<td>func Chdir(dir string) error</td>
+			<td>x=修改当前工作目录为dir</td>
+		</tr>
+		<tr>
+			<td>func Chmod(name string,mode FileMode)error</td>
+			<td>修改name指定文件的mode</td>
+		</tr>
+		<tr>
+			<td>func Chown(name string,uid,gid int)error</td>
+			<td>修改name指定文件的用户id的组id,如果是一个符号链接，那么会修改链接目的地的文件和组id</td>
+		</tr>
+		<tr>
+			<td>func Lchown(name string, uid,gid int)error</td>
+			<td>与Chown一样，但是会修改本地符号链接的文件和组id</td>
+		</tr>
+		<tr>
+			<td>func Chtimes(name string,atime time.Time,mtime time.Time)error</td>
+			<td>修改name指定文件对象的访问时间和修改时间</td>
+		</tr>
+		<tr>
+			<td>func Mkdir(name string,perm FileMode)error</td>
+			<td>使用指定的权限和名称创建一个目录</td>
+		</tr>
+		<tr>
+			<td>func MkdirAll(path string,perm FileMode)error</td>
+			<td>使用指定的权限和名称创建一个目录，包括任何必要的上级目录。权限位perm会应用在每一个被本函数创建的目录上</td>
+		</tr>
+		<tr>
+			<td>func Rename(oldpath,newpath string)error</td>
+			<td>移动一个文件，或者重命名。跟mv一样</td>
+		</tr>
+		<tr>
+			<td>func Truncate(name string, size int64)error</td>
+			<td>Truncate可以修改name指定文件的文件大小</td>
+		</tr>
+		<tr>
+			<td>func Remode(name string)error</td>
+			<td>删除指定文件或目录</td>
+		</tr>
+		<tr>
+			<td>func RemoveAll(path string)error</td>
+			<td>删除path指定的文件或目录以及它包含的任何下级对象</td>
+		</tr>
+		<tr>
+			<td>func Readlink(name string)(string,error)</td>
+			<td>获取name指定的符号链接文件指向的文件的路径</td>
+		</tr>
+		<tr>
+			<td>func Symlink(oldname, newname string)error</td>
+			<td>创建一个名为newname指向oldname的符号链接</td>
+		</tr>
+		<tr>
+			<td>func Link(oldname,newname string)error</td>
+			<td>创建一个名为newname指向oldname的硬链接</td>
+		</tr>
+		<tr>
+			<td>func SameFile(fi1,fi2 FileInfo)bool</td>
+			<td>判断fi1和fi2是否在描述同一个文件</td>
+		</tr>
+		<tr>
+			<td>func TempDir()string</td>
+			<td>返回一个用于保管临时文件的默认目录</td>
+		</tr>
+	</table>
+	</div>
+	<h2>4. 进程有关的操作</h2>
+	<p>有三个有关的结构体，ProcAttr,Process,ProcessState</p>
+	<div class="kuang">
+	<h3>ProcAttr</h3>
+	<p>
+<pre class="definepre">
+type ProcAttr struct {
+    // 如果Dir非空，子进程会在创建进程前先进入该目录。（即设为当前工作目录）
+    Dir string
+    // 如果Env非空，它会作为新进程的环境变量。必须采用Environ返回值的格式。
+    // 如果Env为空字符串，将使用Environ函数的返回值。
+    Env []string
+    // Files指定被新进程继承的活动文件对象。
+    // 前三个绑定为标准输入、标准输出、标准错误输出。
+    // 依赖底层操作系统的实现可能会支持额外的数据出入途径。
+    // nil条目相当于在进程开始时关闭的文件对象。
+    Files []*File
+    // 操作系统特定的创建属性。
+    // 注意设置本字段意味着你的程序可能会运作失常甚至在某些操作系统中无法通过编译。
+    Sys *syscall.SysProcAttr
+}
+</pre>
+	</p>
+	</div>
+	<h3>Process</h3>
+<pre class="definepre">
+type Process struct{
+	Pid int
+	//内含隐藏字段
+}
+</pre>
+	<p>Process保管一个进程的信息</p>
+	<div class="kuang">
+	<p><strong>取得一个Process对象</strong></p>
+	<p>
+		<pre class="definepre">
+func FindProcess(pid int)(p *Process, err error)
+		</pre>
+	</p>
+	<p>根据进程ID查找一个正在运行中的进程。函数返回的进程对象可以用于获取其关于底层操作系统进程的信息</p>
+	<p>
+		<pre class="definepre">
+func StartProcess(name string, argv []string, attr *ProcAttr)(*Process, error)
+		</pre>
+	</p>
+	<p>使用提供的属性，程序名，命令行参数开始一个新进程。StartProcess函数是一个低水平的接口。os/exec包提供了更高水平的接口</p>
+	</div>
+	<div class="kuang">
+	<p><strong>操作Process对象</strong></p>
+	<p>Process对象提供了很多方法：</p>
+	<table>
+		<thead>
+		<tr>
+			<td>函数原型</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>func (p *Process)Signal(sig Signal)error</td>
+			<td>Signal方法向进程发送一个信号。</td>
+		</tr>
+		<tr>
+			<td>func (p *Process)Kill()error</td>
+			<td>让进程立刻退出</td>
+		</tr>
+		<tr>
+			<td>func (p *Process)Wait()(*ProcessState, error)</td>
+			<td>阻塞进程直到进程退出，然后返回一个描述进程的状态的ProcessState。Wait方法会释放绑定到进程p的所有资源。在大多数操作系统中，进程p必须是当前进程的子进程</td>
+		</tr>
+		<tr>
+			<td>func (p *Process)Release()error</td>
+			<td>释放进程p绑定的所有资源，使他们不能再被p使用。</td>
+		</tr>
+	</table>
+	</div>
+	<h3>ProcessState</h3>
+	<p>
+<pre class="definepre">
+type ProcessState struct {
+	//内含隐藏字段
+}
+</pre>
+	</p>
+	<p>ProcessState保管Wait函数报告的某个已退出进程的信息</p>
+	<div class="kuang">
+	<p>ProcessState对象提供了许多方法</p>
+	<table>
+		<thead>
+		<tr>
+			<td>函数原型</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>func (*ProcessState)Pid()int</td>
+			<td>返回一个已经退出的进程id</td>
+		</tr>
+		<tr>
+			<td>func (p *ProcessState)Exited()bool</td>
+			<td>返回进程是否成功退出</td>
+		</tr>
+		<tr>
+			<td>func (p *ProcessState)SystemTime()time.Duration</td>
+			<td>SystemTime返回已经退出进程以及其子进程耗费的系统CPU的时间</td>
+		</tr>
+		<tr>
+			<td>func (p *ProcessState)UserTime()time.Duration</td>
+			<td>返回已经退出进程以及子进程耗费的用户CPU的时间</td>
+		</tr>
+		<tr>
+			<td>func (p *ProcessState)Sys()interface{}</td>
+			<td>Sys返回该已退出进程系统特定的退出信息。需要适当的类型转换，比如Unix里转换为*syscall.WaitStatus类型以获取其内容</td>
+		</tr>
+		<tr>
+			<td>func (p *ProcessState)SysUsage()interface{}</td>
+			<td>SysUsage返回该已退出进程系统特定的资源使用信息。需要进行类型转换。比如Unix要转换成*syscall.Rusage类型已获取其内容</td>
+		</tr>
+		<tr>
+			<td>func (p *ProcessState)Sting()string</td>
+			<td>转换成字符串</td>
+		</tr>
+
+	</table>
+	</div>
+	<h2>5. 错误</h2>
+	<p>os包提供了三种错误类型PathError,LinkError,SyscallError</p>
+	<div class="kuang">
+	<p><strong>PathError</strong>
+<pre class="definepre">
+type PathError struct{
+	Op string
+	Path string
+	Err error
+}
+func (e *PathError)Error()string
+</pre>
+	</p>
+	<p>PathError记录一个错误，以及导致错误的路径</p>
+	</div>
+	<div class="kuang">
+		<p><strong>LinkError</strong></p>
+		<pre class="definepre">
+type LinkError struct{
+	Op string
+	Old string
+	New string
+	Err error
+}
+func (e *LinkError)Error()string
+		</pre>
+		<p>LinkError记录在Link、Symlink、Rename系统调用时出现的错误，以及导致错误的路径</p>
+	</div>
+	<div class="kuang">
+		<p><strong>SyscallError</strong></p>
+		<p>
+			<pre class="definepre">
+type SyscallError struct{
+	Syscall string
+	Err error
+}
+func (e *SyscallError)Error()string
+			</pre>
+		</p>
+		<p>SyscallError记录某个系统调用出现的错误</p>
+	</div>
+</body>
+</html>

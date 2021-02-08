@@ -1,0 +1,76 @@
+<!-->Golang<-->
+<!-->Go设计模式<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>简单工厂模式</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>简单工厂模式</h1>
+	<p>简单工厂模式就是我可以根据一张清单去跟超市订货，超市会自己根据清单联系工厂，让工厂生产出来相应的产品。但产品的清单需要同时扩展。好处是我只需要知道超市和清单就行了，不需要知道工厂和产品是怎么做出来的</p>
+	<p>简单工厂模式的示意图如下：</p>
+	<img src="static/img/简单工厂模式.png" alt="" style="width:50%">
+	<p>简单来说就是通过客户类或者客户函数接收一个要求，那么客户类就会根据要求让工厂接口生产出来相应的产品</p>
+	<p>具体代码如下：
+<pre class="codepre">
+package Factory
+
+import "fmt"
+
+type FoodFactory interface {
+        GetFood()
+}
+
+type food1 struct{}
+
+func (f *food1) GetFood() {
+        fmt.Println("得到一号食物")
+}
+
+type food2 struct{}
+
+func (f *food2) GetFood() {
+        fmt.Println("得到二号食物")
+}
+
+type food3 struct{}
+
+func (f *food3) GetFood() {
+        fmt.Println("得到三号食物")
+}
+
+func NewFoodFactory(number int) FoodFactory {
+        switch number {
+        case 1:
+                return &ampfood1{}
+        case 2:
+                return &ampfood2{}
+        case 3:
+                return &ampfood3{}
+        }
+        return nil
+}
+
+package main
+
+import (
+        "../Factory"
+)
+
+func main() {
+        Factory.NewFoodFactory(2).GetFood()
+        Factory.NewFoodFactory(3).GetFood()
+        Factory.NewFoodFactory(1).GetFood()
+}
+
+输出结果为：
+得到二号食物
+得到三号食物
+得到一号食物
+</pre>
+	</p>
+	<p>先看主函数，NewFoodFactory其实就是超市函数。用过通知超市函数我要什么商品，就是2，3，1。我就直接通过超市拿到了不同的商品。</p>
+	<p>再看Factory包，里面最关键的就是FoodFactory接口，我们是通过这个接口，去实现了一对多。在主函数中隐藏了food类的实现细节。主函数只能通过超市函数来进行访问。如果main包中有一个函数的参数是FoodFactory，也可以通过这个接口传入各种food。如果我新增了food4这个商品，那直接加就好。虽然还需要在超市函数的switch里面加一条分支，但这也比之前要简单的多</p>
+</body>
+</html>

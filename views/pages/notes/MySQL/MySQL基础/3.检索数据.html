@@ -1,0 +1,172 @@
+<!-->MySQL<-->
+<!-->MySQL基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>检索数据</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>检索数据</h1>
+	<p>检索数据使用SELECT关键字</p>
+	<h2>检索单个列</h2>
+	<p>
+		<pre class="definepre">
+SELECT 列名 FROM 表名;
+		</pre>
+	</p>
+	<h2>检索多个列</h2>
+	<p>
+		<pre class="definepre">
+SELECT 列名1,列名2 FROM 表名;
+		</pre>
+	</p>
+	<h2>检索所有列</h2>
+	<p>
+		<pre class="definepre">
+SELECT * FROM 表名
+		</pre>
+	</p>
+	<h2>检索时只显示数值不同的记录(行)</h2>
+	<p>
+		<pre class="definepre">
+SELECT DISTINCT 列名 FROM 表名;
+		</pre>
+	</p>
+	<h2>限制结果</h2>
+	<p>
+		<pre class="definepre">
+SELECT 列名 FROM 表名
+LIMIT 5,5;
+		</pre>
+	</p>
+	<p>表示只显示从第五行开始后的五行</p>
+	<h2>子句(clause)</h2>
+	<p>SQL的语句由子句组成，有些子句是必须的，有些子句是可选的。我们见过的子句其实就是SELECT语句的FROM子句，所以真正的SELECT其实应该这样写</p>
+	<p>
+		<pre class="codepre">
+SELECT 列名 
+FROM 表名;
+		</pre>
+	</p>
+	<h2>排序检索结果</h2>
+	<p>使用SELECT的ORDER BY子句</p>
+	<p>
+		<pre class="definepre">
+SELECT 列名
+FROM 表名
+<strong>ORDER BY 要用来排序的列名</strong>
+		</pre>
+	</p>
+	<p>列名和用来排序的列名都可以是多列</p>
+	<h2>进行降序排序检索结果</h2>
+	<p>
+<pre class="definepre">
+SELECT 列名
+FROM 表名
+ORDER BY 用来排序的列名 <strong>DESC</strong>
+</pre>
+	</p>
+	<p>使用ORDER BY和LIMIT的组合可以找出最大值和最小值</p>
+	<h2>过滤数据</h2>
+	<p>使用WHERE子句</p>
+	<p>SELECT的WHERE子句可以设置过滤条件</p>
+	<p>
+		<pre class="definepre">
+SELECT 列名1,列名2
+FROM 表名
+<strong>WHERE 列名1=值;</strong>
+		</pre>
+	</p>
+	<p>这样就可以过滤出来列名1的列的等于值的数据</p>
+	<p>WHERE支持多种操作: =(等于), &lt&gt(不等于), !=(不等于),&lt(小于),&lt=(小于等于),&gt(大于),&gt=(大于等于),BETWEEN 值1 AND 值2(在指定的两值之间),IS NULL(空值)</p>
+	<h2>空值检查</h2>
+	<p>在创建表时，表设计人员可以指定其中的列是否可以不包含值，一个列不包含值时，称其为包含空值NULL</p>
+	<h2>组合WHERE子句</h2>
+	<p>可以使用AND和OR操作符来链接多个WHERE子句</p>
+	<p>
+		<pre class="definepre">
+SELECT 列名
+FROM 表名
+WHERE 列名=值1 <strong>OR</strong> 列名&lt值2
+		</pre>
+	</p>
+	<p>如果多次使用AND和OR就会涉及到计算次序的问题。是AND的优先级更高。但是可以使用括号()</p>
+	<p>还可以使用IN操作符来指定多个值</p>
+	<p>
+		<pre class="definepre">
+SELECT 列名
+FROM 表名
+WHERE 列名 IN (值1,值2)
+		</pre>
+	</p>
+	<p>其实就是返回的"列名=值1 OR 列名=值2"</p>
+	<p>MySQL还有一个操作符是NOT，可以来指定跟在后面的条件为非</p>
+	<p>
+		<pre class="definepre">
+SELECT 列名
+FROM 表名
+WHERE 列名 NOT IN (值1,值2)
+		</pre>
+	</p>
+	<p>那就会返回所有不是值1或值2的数据</p>
+	<p>MySQL只支持对IN，BETWEEN和EXISTS子句取反，其他则不行</p>
+	<h2>通配符(wildcard)</h2>
+	<p>到目前为止，我们搜索的都是根据已知值来进行搜索的。但是如果想搜索文本中包含w的字段就不行了。这时就需要使用通配符</p>
+	<p>想要使用通配符就要使用LIKE操作符，LIKE操作符指示MySQL，后面的搜索模式用通配符匹配而不是直接相等匹配</p>
+	<p>通配符(wildcard):用来匹配值的一部分的特殊字符</p>
+	<p>搜索模式(search pattern):由字面值，通配符或两者组合成的搜索条件</p>
+	<p>MySQL支持几种通配符，如下表：</p>
+	<table>
+		<thead>
+		<tr>
+			<td>通配符</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>%</td>
+			<td>任何字符出现任意次数</td>
+		</tr>
+		<tr>
+			<td>_</td>
+			<td>任何字符出现一次</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td></td>
+		</tr>
+		<tr>
+			<td></td>
+			<td></td>
+		</tr>
+	</table>
+	<p>一个%通配符的例子：
+<pre class="codepre">
+SELECT 列名
+FROM 表名
+WHERE LIKE nnn%
+</pre>
+	</p>
+	<p>搜索以nnn开头的所有数据，因为%代表任何字符，所以可以接受nnn+任何字符</p>
+	<p>
+<pre class="codepre">
+SELECT 列名
+FROM 表名
+WHERE LIKE %nnn%
+</pre>
+	</p>
+	<p>搜索包含nnn的所有数据</p>
+	<p>一个_通配符的例子：
+<pre class="codepre">
+SELECT 列名
+FROM 表名
+WHERE LIKE _ nnn
+</pre>
+	</p>
+	<p>可以看作_可以被任何字符代替</p>
+	<h2>正则表达式</h2>
+	<p>MySQL支持一部分的正则表达式匹配搜索，由于内容较多，放在单独一篇文章中</p>
+	<p></p>
+</body>
+</html>

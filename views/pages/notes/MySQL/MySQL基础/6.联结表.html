@@ -1,0 +1,72 @@
+<!-->MySQL<-->
+<!-->MySQL基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>联结表</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>联结(Join)表</h1>
+	<p>MySQL是一种关系数据库，所谓关系就是指把数据分解为多个表，一个类据一个表。各表之间通过某些常用的值(即关系)相关联</p>
+	<p>就比如说有一个表储存了供应商信息，供应商ID为主键。另一个表储存了一些商品的信息，但是也需要知道商品相应的供应商信息。那么可以给商品设置一个供应商ID，称为外键，通过这个外键来去供应商表查询供应商的信息</p>
+	<p>外键(foreign key): 外键为某个表中的一列，它包含另一个表的主键值，定义了两表的关系</p>
+	<p>就比如说，有两张表：
+<pre class="codepre">
+mysql&gt select * from product;
++------+---------+
+| name | vent_id |
++------+---------+
+| KOH  |       1 |
+| NaOH |       2 |
+| KF   |       1 |
+| NaF  |       3 |
++------+---------
+
+mysql&gt select * from vent;
++---------+----------+
+| vent_id | name     |
++---------+----------+
+|       1 | wanqing  |
+|       2 | alading  |
+|       3 | guoyao   |
+|       4 | maikelin |
++---------+----------+
+</pre>
+	</p>
+	<h2>内部联结(Inner Join)</h2>
+	<p>
+<pre class="codepre">
+mysql&gt SELECT product.name, product.vent_id,vent.name
+    -&gt FROM product,vent
+    -&gt WHERE product.vent_id=vent.vent_id;
++------+---------+---------+
+| name | vent_id | name    |
++------+---------+---------+
+| KF   |       1 | wanqing |
+| KOH  |       1 | wanqing |
+| NaOH |       2 | alading |
+| NaF  |       3 | guoyao  |
++------+---------+---------+
+</pre>
+	</p>
+	<p>可以看到通过使用WHERE设置过滤条件，实现了两张表的联结。这种联结是等值联结，也被称为<strong>内部联结(Inner Join)</strong></p>
+	<p>上述带WHERE语句的更加标准的写法是：
+<pre class="codepre">
+mysql&gt SELECT product.name, product.vent_id,vent.name
+    -&gt FROM product INNER JOIN vent
+    -&gt ON product.vent_id=vent.vent_id;
++------+---------+---------+
+| name | vent_id | name    |
++------+---------+---------+
+| KF   |       1 | wanqing |
+| KOH  |       1 | wanqing |
+| NaOH |       2 | alading |
+| NaF  |       3 | guoyao  |
++------+---------+---------+
+</pre>
+	</p>
+	<h2>外部联结(Outer Join)</h2>
+	<p>与内部联结不同的是，外部联结会包括没有联结的行，也就是会出现NULL。使用时必须指定是LEFT OUTER JOIN还是RIGHT OUTER JOIN，分别表示外部联结左边还是右边的表</p>
+</body>
+</html>

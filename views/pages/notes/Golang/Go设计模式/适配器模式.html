@@ -1,0 +1,56 @@
+<!-->Golang<-->
+<!-->Go设计模式<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>适配器模式</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>适配器模式</h1>
+	<p>适配器模式：将一个类的接口转换成客户希望的另外一个接口。Adapter模式使得原本由于接口不兼容而不能一起工作的那些类可以一起工作</p>
+	<p>本质上其实就是把原本的类的方法进行包装，基本就是让原本的方法改个名字。就像是给电脑充电一样，原先的电脑是110V的电源，但是来了这个家里只有220V的电源，就需要中间插一个适配器来对电压进行适配</p>
+	<p>下面是适配器模式的一个实例：
+<pre class="codepre">
+package Adapter
+
+import "fmt"
+
+type Target interface {
+        Execute()
+}
+
+type Computer struct {
+}
+
+func (c *Computer) Charge() {
+        fmt.Println("充电")
+}
+
+type Adapter struct {
+        *Computer
+}
+
+func (a *Adapter) Execute() {
+        a.Charge()
+}
+
+package main
+
+import (
+        "../Adapter"
+)
+
+func chargeTarget(a Adapter.Target) {
+        a.Execute()
+}
+
+func main() {
+        t := Adapter.Adapter{}
+        chargeTarget(&ampt)
+}
+</pre>
+	</p>
+	<p>可以看到，在主函数中，有一个"电源"chargeTarget。它接收一个Target接口。但我想对Computer进行充电，但是Computer没有Execute方法，出于某种原因，我现在不能更改Computer类的方法。那么我就可以定义一个Adapter类，<strong>包含Computer成员</strong>,实现Execute方法，并在其中调用原本Computer类的方法</p>
+</body>
+</html>

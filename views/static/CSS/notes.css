@@ -45,18 +45,16 @@ pre{
 	word-wrap:break-word;
 }
 .codepre{
-	padding:20px;
-	font-size:19px;
-	line-height:1.3em;
+	padding:10px;
+	line-height:1.2em;
 	background-color:rgba(150,200,190,0.25);
-	border-radius:10px;
+	border-radius:5px;
 }
 .definepre{
 	padding:20px;
         font-size:18px;
-	font-weight:bold;
 	line-height:1.1em;
-	color:#200772;
+	color:purple;
         border-radius:10px;
 	border:1px dotted black;
 }

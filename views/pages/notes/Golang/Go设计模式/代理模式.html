@@ -1,0 +1,61 @@
+<!-->Golang<-->
+<!-->Go设计模式<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>代理模式</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>代理模式(Proxy)</h1>
+	<p>代理模式，为其他对象提供一种代理以控制对这个对象的访问</p>
+	<p>代理模式就是你让别人去帮你做一件事情。就比如说我是一个特工，我不想暴露自己的声音，我就让别人帮我讲话。当然这个别人在讲话的时候还可以对我的语言进行一定的加工</p>
+	<p>代理模式的示意图如下：</p>
+	<img src="static/img/代理模式.png" alt="">
+	<p>代理模式的代码：
+<pre class="codepre">
+package Proxy
+
+import "fmt"
+
+type Subject interface {
+        Request()
+}
+
+type realClient struct{}
+
+func (r *realClient) Request() {
+        fmt.Println("我是小胖")
+}
+
+type Proxy struct {
+        realclient *realClient
+}
+
+func NewProxy() *Proxy {
+        return &ampProxy{}
+}
+
+func (p *Proxy) Request() {
+        p.realclient.Request()
+}
+
+package main
+
+import (
+        "../Proxy"
+)
+
+func main() {
+        p := Proxy.NewProxy()
+        p.Request()
+}
+
+输出结果为：
+我是小胖
+</pre>
+	</p>
+	<p>可以看到在main包里面，我并不知道特工真正的身份。但是我通过特工的代理，知道了特工的名字是小胖</p>
+	<p>实现的关键：一个是特工和代理都要实现同一个接口(为了传参数，虽然上面的例子没有)。一个是代理类要包含特工类</p>
+</body>
+</html>

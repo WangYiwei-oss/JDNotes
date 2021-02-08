@@ -1,0 +1,55 @@
+<!-->MySQL<-->
+<!-->MySQL基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>组合查询</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>组合查询</h1>
+	<h2>UNION</h2>
+	<p>MySQL允许执行多个查询(多个SELECT语句)，并将结果作为单个查询结果集返回。这些组合查询通常称为<strong>并(Union)</strong>或复合查询(Compound Query)</p>
+	<p>可以使用UNION来实现并的操作，只需要在几条SELECT语句之间加上UNION就可以了</p>
+	<p>
+<pre class="codepre">
+mysql&gt SELECT * FROM product
+    -&gt UNION
+    -&gt SELECT * FROM vent;
++------+----------+
+| name | vent_id  |
++------+----------+
+| KOH  | 1        |
+| NaOH | 2        |
+| KF   | 1        |
+| NaF  | 3        |
+| 1    | wanqing  |
+| 2    | alading  |
+| 3    | guoyao   |
+| 4    | maikelin |
++------+----------+
+</pre>
+	</p>
+	<p>有几点使用UNION的注意事项：
+	<ol>
+		<li>UNION中的每个查询必须包含相同的列，表达式或聚集函数</li>
+		<li>列数据类型不必完全一样，但是必须兼容。可以让DBMS隐式转换</li>
+	</ol>
+	</p>
+	<h2>包含或取消重复的行</h2>
+	<p>如果UNION并的两个SELECT返回了重复的行，那么重复的行将会被省略。比如说：
+<pre class="codepre">
+mysql&gt SELECT name,vent_id FROM product UNION SELECT name,vent_id FROM product;
++------+---------+
+| name | vent_id |
++------+---------+
+| KOH  |       1 |
+| NaOH |       2 |
+| KF   |       1 |
+| NaF  |       3 |
++------+---------+
+</pre>
+	</p>
+	<p>本来应该返回八行的，但是只返回了四行，因为重复的四行被省略了。想不让它省略可以使用UNION ALL</p>
+</body>
+</html>

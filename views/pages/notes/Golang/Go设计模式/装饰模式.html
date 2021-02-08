@@ -1,0 +1,66 @@
+<!-->Golang<-->
+<!-->Go设计模式<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>装饰模式</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>装饰模式(Decorator)</h1>
+	<p>装饰模式：动态地给一个对象添加一些额外的职责，就增加功能来说，装饰模式比生成子类更灵活</p>
+	<p>用来为已有的功能动态地添加更多功能的一种方式。就像装饰圣诞树一样，每次装饰都是并行的，没有什么先后顺序，但是我最终都可以挂到圣诞树上</p>
+	<p>装饰模式的示意图如下：</p>
+	<img src="static/img/装饰模式.png" alt="" style="width:50%">
+	<p>装饰模式代码：
+<pre class="codepre">
+package Decorator
+
+import "fmt"
+
+func Person() {
+        fmt.Println("裸着")
+}
+
+func Dress(f func(), cloth string) func() {
+        return func() {
+                fmt.Println("穿了", cloth)
+                f()
+        }
+}
+
+package main
+
+import (
+        "../Decorator"
+        "fmt"
+)
+
+func main() {
+        fmt.Println("第一次装扮：")
+        Decorator.Dress(Decorator.Dress(Decorator.Person, "裤子"), "衣服")()
+        fmt.Println("第二次装扮：")
+        a := Decorator.Person
+        b := Decorator.Dress(a, "裙子")
+        c := Decorator.Dress(b, "帽子")
+        d := Decorator.Dress(c, "凉鞋")
+        d()
+}
+
+运行结果为：
+第一次装扮：
+穿了 衣服
+穿了 裤子
+裸着
+第二次装扮：
+穿了 凉鞋
+穿了 帽子
+穿了 裙子
+裸着
+</pre>
+	</p>
+	<p>可以看到我通过Dress方法，动态地为Person方法添加了新的功能。关键就是装饰前后类型不能发生变化，穿之前是一个人，穿之后还得是一个人</p>
+	<p>上面展示的是一个最最简单的装饰，还可以与其他的模式结合。比如和简单工厂模式结合，装扮的手段可以通过工厂添加。这样的话模式更像是上面示意图。</p>
+	<p>实际应用中，比如说我想给一段程序加一个测试执行时间的程序，就可以通过装饰模式挂到上面</p>
+</body>
+</html>

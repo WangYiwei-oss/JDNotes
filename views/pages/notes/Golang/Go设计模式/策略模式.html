@@ -1,0 +1,84 @@
+<!-->Golang<-->
+<!-->Go设计模式<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>策略模式</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>策略模式(Strategy)</h1>
+	<p>它定义了算法家族，分别封装起来，让它们之间可以互相替换，此模式让算法的变化，不会影响到使用算法的客户</p>
+	<p>策略模式实现的就是下游的执行人固定，但是执行人具体怎么做的策略是可以替换的</p>
+	<p>策略模式的示意图如下：</p>
+	<img src="static/img/策略模式.png" alt="" style="width:50%">
+	<p>策略模式代码：
+<pre class="codepre">
+package Strategy
+
+import "fmt"
+
+type Strategy interface {
+        Execute()
+}
+
+type func1 struct{}
+
+func (s *func1) Execute() {
+        fmt.Println("执行A算法")
+}
+
+func NewFunc1() Strategy {
+        return &ampfunc1{}
+}
+
+type func2 struct{}
+
+func (s *func2) Execute() {
+        fmt.Println("执行B算法")
+}
+
+func NewFunc2() Strategy {
+        return &ampfunc2{}
+}
+
+type context struct {
+        strategy Strategy
+}
+
+func NewContext() *context {
+        return &ampcontext{}
+}
+
+func (c *context) ConcreteStrategy(strategy Strategy) {
+        c.strategy = strategy
+}
+
+func (c *context) Execute() {
+        c.strategy.Execute()
+}
+
+package main
+
+import (
+        "../Strategy"
+)
+
+func main() {
+        s1 := Strategy.NewFunc1()
+        s2 := Strategy.NewFunc2()
+        c := Strategy.NewContext()
+        c.ConcreteStrategy(s1)
+        c.Execute()
+        c.ConcreteStrategy(s2)
+        c.Execute()
+}
+
+运行结果为：
+执行A算法
+执行B算法
+</pre>
+	</p>
+	<p>先看主函数，执行人是c.Execute(), 更换策略的办法是c.ConcerteStrategy。那可供更换的策略就由NewFunc1和NewFunc2来提供啦。可以发现主函数这边需要知道的东西还是有点多，其实可以结合简单工厂模式来对代码进一步简化，就是可供替换的策略完全可以通过一个工厂来提供，那主函数就会更加简单啦</p>
+</body>
+</html>

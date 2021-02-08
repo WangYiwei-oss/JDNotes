@@ -1,0 +1,360 @@
+<!-->Golang<-->
+<!-->Go并发编程<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Channel</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Channel</h1>
+	<p>Go语言提倡"应该以通信作为手段来共享内存"</p>
+	<div class="kuang">
+	<h2>channel的基本概念</h2>
+	<p>在Go语言中，channel即指通道类型，也指代可以传递某种类型的值的通道。</p>
+	<p>与字典和切片类型一样，channel也是一个引用类型。声明应该是这样的：
+<pre class="definepre">
+chan T
+</pre>
+	</p>
+	<p>T代表的是通道的类型，限制了可以经由此通道传递的元素值的类型</p>
+	<p>上面的声明是双向通道，也可以有单向通道
+<pre class="definepre">
+&lt-chan T	//只出通道，只能从通道内接收值
+chan&lt- T	//只入通道，只能向通道内发送值
+</pre>
+	</p>
+	</div>
+	<div class="kuang">
+	<h2>操作的特性</h2>
+	<p>在同一时刻，仅有一个goroutine能向通道中发送值，也只有一个goroutine能从通道中接收值。并且严格遵从FIFO。可以看作是一个先进先出的消息队列</p>
+	</div>
+	<div class="kuang">
+	<h2>初始化通道</h2>
+	<p>通道是一个引用类型的值，所以在初始化之前通道是一个nil</p>
+	<p>在使用之前需要用make来初始化。
+	<pre class="definepre">
+make(chan int,10)
+	</pre>
+	</p>
+	<p>代表初始化了一个能缓存十个int值的通道。第二个参数可以省略，就代表非缓冲通道，就是说只能缓存0个。进一个值就必须被取走，否则就会阻塞</p>
+	</div>
+	<div class="kuang">
+<h2>接收元素值</h2>
+<p>
+<pre class="definepre">
+strchan:=make(chan string,10)
+elem:=&lt-strchan	//取值
+</pre>
+</p>
+<p>直接用&lt-就代表了从通道中取值，当然现在通道中没有值，goroutine会进入GWaiting状态，直到有值了才会被唤醒</p>
+<p>&lt-还可以有第二个返回值
+<pre class="definepre">
+elem,ok:=&lt-strchan
+</pre>
+</p>
+<p>第二个返回值ok，代表通道是否被关闭。如果已经被关闭了，ok就会为false。由于通道被关闭后，elem会接收到一个通道对应类型的零值。而且通道对应类型的零值是可以被传入通道的。这时就无法判断通道是否被关闭了，所以就需要第二个返回值</p>
+	<p>从一个未被初始化的通道中接收元素值会导致goroutine永久阻塞</p>
+	</div>
+	<div class="kuang">
+	<h2>Happens before</h2>
+	<p>对于一个缓冲通道，必须是先存入值，才会可以取值</p>
+	<p>具体体现在：</p>
+	<ul>
+		<li>发送操作会使通道复制发送的元素。复制的目的地址有两种，如果有接收的goroutine已经在等了的话(通道为空),会复制到接收的goroutine持有的内存地址。否则(通道不为空),就会被复制到通道缓存的内存地址</li>
+		<li>接收方会从通道里接收一个值的副本(是值类型而不是引用类型)。如果通道中没有值，接收方就会选择不接收，阻塞</li>
+		<li>所以在通道完全复制一个元素值之前，任何goroutine都不可能从它那里接收到这个元素值</li>
+	</ul>
+	</div>
+	<div class="kuang">
+	<h2>发送元素值</h2>
+	<p>跟接收元素值类似：
+<pre class="definepre">
+strchan&lt-"a"
+</pre>
+	</p>
+	<p>如果给一个值为nil的通道发送值，则发送的goroutine将会永久阻塞。如果给一个已经关闭的通道发送值会引发panic</p>
+	<p>通道可以直接用来发送信号，只需要把通道的类型改为空结构体类型struct{}。在go语言中这个代表不包含任何字段的结构体类型。空结构体类型的变量是不占用内存的，并且所有该类型的变量都拥有相同的内存地址</p>
+	<p>下面的例子演示了发送和接收操作，和空结构体的使用：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+var strChan = make(chan string, 3)
+
+func main() {
+        syncChan1 := make(chan struct{}, 1) //信号通道，负责让第一个go func开始接收值
+        syncChan2 := make(chan struct{}, 2) //信号通道负责让main函数不要在两个go func结束之前结束
+        go func() {
+                &lt - syncChan1
+                fmt.Println("收到syncChan1的信号，等待一秒")
+                time.Sleep(time.Second)
+                for {
+                        if elem, ok := &lt - strChan; ok {
+                                fmt.Println("接收到", elem)
+                        } else {
+                                break
+                        }
+                }
+                fmt.Println("停止")
+                syncChan2&lt - struct{}{}
+        }()
+        go func() {
+                for _, elem := range []string{"a", "b", "c", "d", "e"} {
+                        strChan&lt - elem
+                        fmt.Println("写入通道", elem)
+                        if elem == "c" {
+                                syncChan1&lt - struct{}{}
+                                fmt.Println("向syncChan1发送信号")
+                        }
+                }
+                fmt.Println("等待两秒关闭通道")
+                close(strChan)
+                syncChan2&lt - struct{}{}
+        }()
+        &lt - syncChan2
+        &lt - syncChan2
+}
+运行结果为:
+写入通道 a
+写入通道 b
+写入通道 c
+向syncChan1发送信号
+收到syncChan1的信号，等待一秒
+接收到 a
+接收到 b
+接收到 c
+接收到 d
+写入通道 d
+写入通道 e
+等待两秒关闭通道
+接收到 e
+停止
+</pre>
+	</p>
+	</div>
+	<div class="kuang">
+	<h2>关闭通道</h2>
+	<p>调用close函数就可以关闭一个通道，但是关闭通道的时候应该格外小心，因为向一个已经关闭的通道发送值会引发panic。关闭一个已经关闭的通道也会引发panic。所以关闭通道需要一些技巧，首先无论如何不应该在发送方处关闭通道。其次可以使用defer和select语句</p>
+	</div>
+	<div class="kuang">
+	<h2>长度和容量</h2>
+	<p>内建函数len和cap可以用于通道，反别返回现存缓存值个数和缓存区容量</p>
+	</div>
+	<div class="kuang">
+	<h2>单向通道</h2>
+	<p>首先，单向通道不应该出现在变量声明中，比如var uselessChan &lt-chan int</p>
+	<p>这个只出不进的通道是没有任何意义的</p>
+	<p>单向通道通常都出现在函数的声明中，无论是作为参数或者是返回值。当然你传入的仍然应该是一个双向通道，然后go会自动类型转换。以此作为一种约束。(注意单向通道是不能转换成双向通道的)</p>
+	</div>
+	<div class="kuang">
+	<h2>for range与channel</h2>
+	<p>通过使用for range语句可以持续地从通道中取值</p>
+	<p>
+<pre class="codepre">
+for elem:=range strChan{
+	fmt.Println(elem)
+}
+</pre>
+	</p>
+	<p>如果通道的值取完了，就会阻塞，直到通道中再新加入值。如果通道关闭了，for语句会结束循环。如果通道中还有值，for会把里面的值都取完了才结束循环</p>
+	</div>
+	<div class="kuang">
+	<h2>select语句</h2>
+	<p>注意此select非彼select</p>
+	<p>select语句是一种仅能用于通道发送和接收操作的专用语句。跟switch非常类似。比如说我有两个通道，有一个函数想同时从这两个通道中拿值出来，但是如果正常地写的话:
+<pre class="codepre">
+a:=&lt-strChan1
+b:=&lt-strChan2
+</pre>
+	</p>
+	<p>这明显不能做到同时，因为必须strChan1通道关闭了之后才能从strChan2中拿值。如果外面嵌套了for循环则更为明显</p>
+	<p>先来看一个selete的例子：
+<pre class="codepre">
+package main
+
+import "fmt"
+
+func main() {
+        chan1 := make(chan int, 2)
+        chan2 := make(chan int, 2)
+        syncChan := make(chan struct{}, 2)
+        go func() {
+                for i := 0; i &lt 10; i++ {
+                        select {
+                        case chan1 &lt- i:
+                        case chan2 &lt- (10 - i):
+                        }
+                }
+                syncChan &lt- struct{}{}
+        }()
+        go func() {
+                for {
+                        select {
+                        case a := &lt-chan1:
+                                fmt.Println(a)
+                        case b := &lt-chan2:
+                                fmt.Println(b)
+                        }
+                }
+        }()
+        &lt-syncChan
+        &lt-syncChan
+}
+运行结果为：
+0
+3
+4
+9
+8
+5
+4
+1
+7
+8
+fatal error: all goroutines are asleep - deadlock!
+</pre>
+	</p>
+	<p>第一个函数用来向通道里写值，第二个用来拿值。可以看到运行结果是十个数字，并且完全没有顺序可言，说明select运行良好，同步地进行case语句。但后面还有一条报错，这是因为第二个函数的for循环根本没办法结束，成了死循环</p>
+	<p>下面解决一下这个问题，让它在两个通道都关闭后结束循环:
+<pre class="codepre">
+package main
+
+import "fmt"
+
+func main() {
+        chan1 := make(chan int, 2)
+        chan2 := make(chan int, 2)
+        syncChan := make(chan struct{}, 2)
+        go func() {
+                for i := 0; i &lt 10; i++ {
+                        select {
+                        case chan1 &lt- i:
+                        case chan2 &lt- (10 - i):
+                        }
+                }
+                close(chan1)
+                close(chan2)
+                syncChan &lt- struct{}{}
+        }()
+        go func() {
+        Loop:
+                for {
+                        var ok1 bool
+                        var ok2 bool
+                        var a int
+                        var b int
+                        select {
+                        case a, ok1 = &lt-chan1:
+                                fmt.Println(a)
+                        case b, ok2 = &lt-chan2:
+                                fmt.Println(b)
+                        }
+                        if !ok1 && !ok2 {
+                                break Loop
+                        }
+                }
+                syncChan &lt- struct{}{}
+        }()
+        &lt-syncChan
+        &lt-syncChan
+}
+运行结果：
+10
+1
+4
+8
+7
+5
+6
+3
+0
+</pre>
+	</p>
+	<p>解决办法主要就是用到关闭通道后，从通道取值的第二个返回值。来判断通道是否已经关闭。还有就是用到了带标签的break语句。这种带标签的break语句会break标签下的那条语句，也就是for。如果直接break的话会break select。然后进入死循环</p>
+	</div>`
+	<div class="kuang">
+	<h2>非缓冲的channel</h2>
+	<p>如果写成make(chan int,0)或者make(chan int)。那么就有了一个非缓冲的channel。也就是异步的通道变成了同步的通道</p>
+	<p>非缓冲的channel有这样的特点：</p>
+	<ul>
+		<li>向此通道发送元素值会阻塞，直到有一个接收操作进行为止。该接收操作会先得到元素值的副本，然后在唤醒发送方所在的goroutine之后返回。也就是说接收操作会在对应的发送操作之前完成</li>
+		<li>从此类通道接收元素值的操作会被阻塞，直到至少有一个发送操作进行为止。该发送操作会直接把元素值复制给接收方，然后在唤醒接收方所在的goroutine之后返回。也就是说，这时的发送操作会在对应的接收操作完成之前完成</li>
+	</ul>
+	<p>非缓冲通道的同步特性会让整体运行的速度，与慢的一方持平</p>
+	</div>
+	<div class="kuang">
+	<h2>time包与channel</h2>
+	<h3>定时器</h3>
+	<p>定时器是一个非常常用的东西。time.Timer结构体实现了一个定时器的功能。使用起来的步骤是这样的</p>
+	<ol>
+		<li>使用time.NewTimer(time.Duration)构造一个time.Timer。比如说timer:=time.NewTimer(time.Second*10)就构造好了一个离现在时间10s的定时器</li>
+		<li>使用它的方法Stop和Reset来停止和重置定时器</li>
+		<li>用time.Timer.C通道来接收定时器到点发出的通知</li>
+	</ol>
+	<p>写一个例子：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+func main() {
+        fmt.Println(time.Now())
+        timer := time.NewTimer(time.Second * 5)
+        &lt-timer.C	//通过通道阻塞并接收定时器的通知
+        fmt.Println(time.Now())
+}
+运行结果：
+2021-02-07 23:38:58.229928607 +0800 CST m=+0.000025886
+2021-02-07 23:39:03.230568514 +0800 CST m=+5.000665867
+</pre>
+	</p>
+	<p>可以看到通过time.Timer.C实现了阻塞程序五秒钟</p>
+	<h3>断续器</h3>
+	<p>time包中另外一个重要的结构体类型是time.Ticker。它也是用time.NewTicker(time.Duration)来初始化的。它也有一个发送通知的通道time.Ticker.C。它不能被重置，只能被停止，所以只有一个方法:Stop</p>
+	<p>写一个例子:
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+func main() {
+        count := 0
+        ticker := time.NewTicker(time.Second)
+        for {
+                fmt.Println(time.Now())
+                &lt-ticker.C
+                count++
+                if count == 10 {
+                        ticker.Stop()
+                        break
+                }
+        }
+}
+运行结果为:
+2021-02-07 23:46:58.923489863 +0800 CST m=+0.000028392
+2021-02-07 23:46:59.924122163 +0800 CST m=+1.000660852
+2021-02-07 23:47:00.924276947 +0800 CST m=+2.000815633
+2021-02-07 23:47:01.923838183 +0800 CST m=+3.000376906
+2021-02-07 23:47:02.923639454 +0800 CST m=+4.000178001
+2021-02-07 23:47:03.923707259 +0800 CST m=+5.000245944
+2021-02-07 23:47:04.924263649 +0800 CST m=+6.000802370
+2021-02-07 23:47:05.924270196 +0800 CST m=+7.000808880
+2021-02-07 23:47:06.924251701 +0800 CST m=+8.000790411
+2021-02-07 23:47:07.923715726 +0800 CST m=+9.000254457
+</pre>
+	</p>
+	<p>可以看到利用time.Ticker.C实现了一个读秒的功能</p>
+	</div>
+</body>
+</html>

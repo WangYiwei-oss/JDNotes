@@ -3,26 +3,36 @@
 <head>
 	<meta charset="UTF-8">
 	<title>实验助手</title>
+	<link rel="stylesheet" href="../static/CSS/header.css">
+	<link rel="stylesheet" href="../static/CSS/mynotes.css">
+	<link rel="stylesheet" href="../static/CSS/exp.css">
+        <script src="static/JS/jquery-1.10.2.js"></script>
+	<script>
+	{{.script}}
+	</script>
 </head>
 <body>
-	<div style="background-color:red">
-		<div>
-		<span>LOGO</span>
-		<a href="mynotes.html">我的笔记</a>
-		<a href="expassistant.html">实验助手</a>
-		<a href="users/login.html">登陆</a>
-		<a href="users/register.html">注册</a>
-		</div>
-		<div>欢迎图片</div>
-	</div>
-	<div style="background-color:pink">
-		<a href="#">计算共沉淀配比</a>
-		<a href="#">量子效率输入版</a>
-		<a href="#">量子效率文件版</a>
-		<a href="#">计算积分面积</a>
-	</div>
-	<div style="background-color:yellow">
-		<h1>实验内容</h1>
+	<div id="header">
+        <a id="mainlogo" href="/index">主LOGO</a>
+        <a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
+        <a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
+        <a class="label1" href="/mynotes">我的笔记</a>
+        <a class="label1" href="/expassistant">实验助手</a>
+        <a class="label2" href="pages/user/register">注册</a>
+        <a class="label2" href="pages/user/login">登陆</a>
+        </div>
+        <div id="welcome"></div>
+	<div id="directory">
+                <a href="/expassistant?type=cal_iqy_input">量子效率输入版</a>
+                <a href="/expassistant?type=cal_iqy_file">量子效率文件版</a>
+                <a href="/expassistant?type=cal_integral">计算积分面积</a>
+		<a href="/expassistant?type=fit_lifetime">寿命拟合</a>
+                <a href="/expassistant?type=cal_exp1">计算共沉淀配比</a>
+                <a href="/expassistant?type=cal_exp2">计算水热配比</a>
+        </div>
+	<div id="content">
+	{{.content}}
+	<p id="result"></p>
 	</div>
 </body>
 </html>

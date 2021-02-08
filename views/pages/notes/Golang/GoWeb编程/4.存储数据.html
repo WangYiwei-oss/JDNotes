@@ -1,0 +1,153 @@
+<!-->Golang<-->
+<!-->GoWeb编程<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>存储数据</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>存储数据</h1>
+	<h2>1. 内存存储</h2>
+	<p>内存存储其实就是将数据存储在运行中的应用里面，对于go语言来说就是使用数组，切片，映射和其他数据结构来储存数据</p>
+	<p>往往人们在开发的时候就使用关系数据库，然后在性能扩展的时候再去重构代码让数据储存在内存中，以提高性能</p>
+	<h2>2. 文件存储</h2>
+	<p>将数据储存到非易失储存器里面，人们最先想到的肯定是存到文件里面去。本节介绍两种相关的技术。一种需要用到通用的CSV(comma-spearated value);第二种需要用到Go语言特有的gob包</p>
+	<p>gob是一种能够储存在文件里面的二进制格式，这种格式可以快速且高效地将内存中的数据序列化到一个或多个文件里面。</p>
+	<h3>2.1 读取和写入CSV文件</h3>
+	<p>CSV格式是一种文件格式，它可以让文本编辑器非常方便地读写由文本和数字组成的表格数据。CSV的应用非常广泛，包括Excel和Numbers在内的大多数电子表格程序都支持CSV格式。</p>
+	<p>GO语言提供了能够生成和处理CSV文件数据的函数库encoding/csv包</p>
+	<p>下面写一个CSV文件的读写过程：
+<pre class="codepre">
+package main
+
+import (
+        "encoding/csv"
+        "fmt"
+        "os"
+        "strconv"
+)
+
+type Post struct {
+        Id      int
+        Content string
+        Authhor string
+}
+
+func main() {
+        csvFile, err := os.Create("posts.csv")
+        if err != nil {
+                panic(err)
+        }
+        defer csvFile.Close()
+        allPosts := []Post{
+                {Id: 1, Content: "Helloworld", Authhor: "Wang"},
+                {2, "Hi Kitty", "zhang"},
+        }
+        writer := csv.NewWriter(csvFile)
+        for _, post := range allPosts {
+                line := []string{strconv.Itoa(post.Id), post.Content, post.Authhor}
+                err := writer.Write(line)
+                if err != nil {
+                        panic(err)
+                }
+        }
+        writer.Flush()	//保证缓冲区的所有数据已经被正确地写入到文件里面了
+        file, err := os.Open("posts.csv")
+        if err != nil {
+                panic(err)
+        }
+        defer file.Close()
+        reader := csv.NewReader(file)
+        reader.FieldsPerRecord = -1
+	//负数代表即使在读取时发现缺少了某些字段，程序进程也不会被中断
+	//大于零表示要求从每条记录中读取出的字段数量，如果不符就会抛出一个错误
+	//如果是0,就会以第一次读取出的字段数量用作FieldsPreRecord的值
+        record, err := reader.ReadAll()
+        if err != nil {
+                panic(err)
+        }
+        var posts []Post
+        for _, item := range record {
+                id, _ := strconv.ParseInt(item[0], 0, 0)
+                post := Post{int(id), item[1], item[2]}
+                posts = append(posts, post)
+        }
+        for _, i := range posts {
+                fmt.Println(i)
+        }
+}
+
+运行结果为：
+{1 Helloworld Wang}
+{2 Hi Kitty zhang}
+
+posts.csv文件为：
+1,Helloworld,Wang
+2,Hi Kitty,zhang
+</pre>
+	</p>
+	<p>其余的其实和普通文件的读写是一样的，csv的读写需要借助一个Writer和一个Reader，用来编码和解码。把字符串切片和csv的逗号的格式相互转换</p>
+	<h3>2.2 gob包</h3>
+	<p>encoding/gob包用于管理由gob组成的流，这是一种在编码器和解码器之前进行交换的二进制数据。这种数据原本是为序列化以及数据传输而设计的，但它也可以用于对数据进行持久化，并且让用户能够方便地对文件进行读写，编码器和解码器一般都会分别包裹起程序的写入器和读取器</p>
+	<p>下面是一个使用gob包的例子
+<pre class="codepre">
+package main
+
+import (
+        "bytes"
+        "encoding/gob"
+        "fmt"
+        "io/ioutil"
+)
+
+type Post struct {
+        Id      int
+        Content string
+        Authhor string
+}
+
+func store(data interface{}, filename string) {
+        //储存数据
+        buffer := new(bytes.Buffer)	//bytes.Buffer是一个拥有Read和Write方法的可变长字节缓冲区
+        encoder := gob.NewEncoder(buffer)
+        err := encoder.Encode(data)
+        if err != nil {
+                panic(err)
+        }
+        err = ioutil.WriteFile(filename, buffer.Bytes(), 0600)
+        if err != nil {
+                panic(err)
+        }
+}
+
+func load(data interface{}, filename string) {
+        raw, err := ioutil.ReadFile(filename)
+        if err != nil {
+                panic(err)
+        }
+        buffer := bytes.NewBuffer(raw)
+        dec := gob.NewDecoder(buffer)
+        err = dec.Decode(data)
+        if err != nil {
+                panic(err)
+        }
+}
+
+func main() {
+        post := Post{1, "HelloWorld", "Wang"}
+        store(post, "post1")
+        var postRead Post
+        load(&amppostRead, "post1")
+        fmt.Println(postRead)
+}
+
+运行结果为：
+{1, "HelloWorld", "Wang"}
+
+文件post1里面为乱码
+</pre>
+	</p>
+	<p>其他和读写普通文件相同，但是需要使用gob包的编码器和解码器对数据进行加码和解码,由于储存的是二进制数据，那么只要存的数据post和读得数据postRead类型统一，就可以存任何种类的数据</p>
+</body>
+</html>

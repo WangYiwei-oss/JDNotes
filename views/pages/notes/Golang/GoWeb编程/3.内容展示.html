@@ -1,0 +1,360 @@
+<!-->Golang<-->
+<!-->GoWeb编程<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>内容展示</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>内容展示</h1>
+	<p>Web模板就是一些预先设计好的HTML页面，名为模板引擎的软件程序会通过重复地使用这些页面来创建一个或多个HTML页面。</p>
+	<p>Go语言使用text/template和html/template作为模板引擎，通常包含两步：</p>
+	<ol>
+		<li>对文本格式的模板源进行语法分析，创建一个经过语法分析的模板结构，其中模板源可以是任何输入</li>
+		<li>执行经过语法分析的模板引擎，将ResponseWriter和模板所需的动态数据传递给模板引擎，并生成最终的HTML</li>
+	</ol>
+	<p>先写一个简单的实例：
+<pre class="codepre">
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="UTF-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+	<font style="color:red">&lth1&gt{{.}}&lt/h1&gt</font>
+&lt/body&gt
+&lt/html&gt
+
+
+package main
+
+import (
+        "html/template"
+        "net/http"
+)
+
+func f(w http.ResponseWriter, r *http.Request) {<font style="color:red">
+        t, _ := template.ParseFiles("test.html")
+	t.Execute(w, "Hello World")</font>
+}
+
+func main() {
+        http.HandleFunc("/", f)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p>可以看到模板引擎把一个我们想要的数据(Hello World!)填写给了模板</p>
+	<h2>动作</h2>
+	<p>我们上面在HTML里面写的{{.}}这个样子的称为一个动作，{{}}称为定界符(delimiter)。.是一个动作，代表的是传递给模板的数据</p>
+	<p>Go拥有很多动作，其中用的最多的有五种动作：条件动作，迭代动作，设置动作，包含动作和定义动作</p>
+	<h3>条件动作</h3>
+	<p>条件动作会根据参数的值来决定对多条语句中的哪一条执行。格式如：</p>
+	<p>
+<pre class="definepre">
+{{ if arg }}
+	balabala1
+{{ else }}
+	balabala2
+{{ end }}
+</pre>
+	</p>
+	<p>可以没有else</p>
+	<h3>迭代动作</h3>
+	<p>迭代动作可以对数组，切片，映射或者通道进行迭代，而在携带循环的内部，点(.)则会被设置为当前迭代的元素</p>
+	<p>
+<pre class="definepre">
+{{ range array }}
+	Dot is set to the element{{ . }}
+{{ else }}
+	balabala
+{{ end }}
+</pre>
+	</p>
+	<p>else可以省略，是作为当被迭代的数据结构为空时的默认结果</p>
+	<h3>设置动作</h3>
+	<p>设置动作允许用户在指定的范围内为点(.)设置值。</p>
+	<p>
+<pre class="definepre">
+{{ with arg}}
+	Dot is set to arg
+{{ end }}
+</pre>
+	</p>
+	<p>介于with arg和end之间的点将被设置为参数arg的值。</p>
+	<h3>包含动作</h3>
+	<p>包含动作允许用户在一个模板里面包含另一个模板，从而构建出嵌套的模板。包含动作的格式为{{ template "name"}}，其中name是包含模板的url</p>
+	<p>下面是一些示例：
+	<p>条件动作</p>
+<pre class="codepre">
+<strong>test.html</strong>
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="UTF-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+        {{ if .}}
+                &lth1&gt走第一条路&lt/h1&gt
+        {{ else }}
+                &lth1&gt走第二条路&lt/h1&gt
+        {{ end }}
+&lt/body&gt
+&lt/html&gt
+
+<strong>main.html</strong>
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="UTF-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+        &ltform action="/process" method="post"&gt
+                &ltinput type="text" name="really"/&gt
+                &ltinput type="submit"/&gt
+        &lt/form&gt
+&lt/body&gt
+&lt/html&gt
+
+<strong>web.go</strong>
+package main
+
+import (
+        "html/template"
+        "io/ioutil"
+        "net/http"
+        "strconv"
+)
+
+func f(w http.ResponseWriter, r *http.Request) {
+        t, _ := template.ParseFiles("test.html")
+        r.ParseForm()
+        a := r.Form["really"][0]
+        c, _ := strconv.Atoi(a)
+        t.Execute(w, c)
+}
+
+func f1(w http.ResponseWriter, r *http.Request) {
+        a, _ := ioutil.ReadFile("./main.html")
+        w.Write(a)
+}
+
+func main() {
+        http.HandleFunc("/", f1)
+        http.HandleFunc("/process", f)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p>实现了在网页中提交请求，小于1的话走第二条路，大于0的话走第一条路</p>
+	<p><strong>迭代动作</strong></p>
+	<p>
+<pre class="codepre">
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="UTF-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+        &ltol&gt
+        {{range .}}
+                &ltli&gt{{.}}&lt/li&gt
+        {{end}}
+        &lt/ol&gt
+&lt/body&gt
+&lt/html&gt
+
+package main
+
+import (
+        "html/template"
+        "net/http"
+)
+
+func f(w http.ResponseWriter, r *http.Request) {
+        t, _ := template.ParseFiles("test.html")
+        a := []string{"第一", "第二", "第三"}
+        t.Execute(w, a)
+}
+func main() {
+        http.HandleFunc("/", f)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p><strong>实现了动态地创建一个ol</strong></p>
+	<p>设置动作没什么好说的</p>
+	<p><strong>包含动作</strong></p>
+	<p>
+<pre class="codepre">
+以下为模板1的代码
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="UTF-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+        &lth1&gt这是模板1&lt/h1&gt
+        &lth2&gt{{.}}&lt/h2&gt
+        &lthr/&gt
+        {{template "main.html" .}}
+        &lthr/&gt
+&lt/body&gt
+&lt/html&gt
+
+以下为模板2的代码
+&lth1&gt这是模板2&lt/h1&gt
+&lth2&gt{{.}}&lt/h2&gt
+
+package main
+
+import (
+        "html/template"
+        "net/http"
+)
+
+func f(w http.ResponseWriter, r *http.Request) {
+        t, _ := template.ParseFiles("test.html", "main.html")
+        t.Execute(w, "Hello World")
+}
+func main() {
+        http.HandleFunc("/", f)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p>可以看到，成功地组装了两个模板。要注意必须解析所有的模板，template.ParseFiles第一个输入为主模板，Execute执行的时候会执行主模板。</p>
+	<p>还有一个地方要特别注意，在{{template "main.html" .}}这里有一个.这个点(.)不是必须的，但是如果不加上，则不能够给main.html传递值</p>
+	<h2>参数，变量和管道</h2>
+	<p>参数：</p>
+	<p>一个参数(argument)就是模板中的一个值。它可以是布尔，整数，字符串等字面量，也可以是结构体，结构体字段，方法或函数。也可以是一个.用于表示处理器向模板引擎传递的数据</p>
+	<p>变量：</p>
+	<p>除了参数以外还可以设置变量。变量以$开头</p>
+	<p>比如说：
+<pre class="codepre">
+{{ range $key, $value := .}}
+	键是$key,值是$value
+{{ end }}
+</pre>
+	</p>
+	<p>就可以遍历一个键值对</p>
+	<p>管道：</p>
+	<p>管道的形式是这样的{{ p1|p2|p3 }}</p>
+	<p>作用就是把p1的输出给到p2，再把p2的输出给到p3</p>
+	<p>这里的p1,p2,p3可以是参数或者函数。</p>
+	<p>
+<pre class="codepre">
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="UTF-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+        &lth1&gt{{3.1415926|printf "%.2f"}}&lt/h1&gt
+&lt/body&gt
+&lt/html&gt
+</pre>
+	</p>
+	<p>这里把3.1415926作为参数传给了内置函数printf。实现了格式化输出</p>
+	<h2>函数</h2>
+	<p>Go的函数也是可以用作模板的参数的。Go模板引擎本身内置了一些非常基础的函数，比如以fmt.Sprint创建的别名函数。当然也可以自定义函数，自定义的函数必须只能返回一个值，或者返回一个值和一个错误</p>
+	<p>为了创建一个自定义的模板函数，用户需要：</p>
+	<ol>
+		<li>创建一个名为FuncMap的映射，并将映射的键设置为函数的名字，而映射的值为实际定义的函数</li>
+		<li>将FuncMap与模板进行绑定</li>
+	</ol>
+	<p>比如：
+<pre class="codepre">
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="utf-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+        &ltdiv&gt值为{{. | fd 3}}&lt/div&gt
+&lt/body&gt
+&lt/html&gt
+
+package main
+
+import (
+        "html/template"
+        "net/http"
+)
+
+func add(a, b int) int {
+        return a + b
+}
+
+func f(w http.ResponseWriter, r *http.Request) {
+        funcMap := template.FuncMap{"fd": add}
+        t := template.New("test.html").Funcs(funcMap)
+        t, _ = t.ParseFiles("test.html")
+        t.Execute(w, 1)
+}
+func main() {
+        http.HandleFunc("/", f)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p>通过管道和函数，实现了一个简单的加法</p>
+	<h2>上下文感知</h2>
+	<p>Go语言的模板引擎可以根据内容所处的上下文改变其显示内容。也就是说如果我实在一个href="{{.}}"这里，那么会填写为一种格式，如果在onclick="{{.}}"这里会填写为另一种格式，在JavaScript中又是另一种，在css中又是另一种</p>
+	<p>最常见的用途就是防御XSS攻击</p>
+	<p>XSS攻击的原理很简单，就比如说我有一个输入框可以输入，这个输入会通过模板引擎写入最终的HTML。那么我如果输入一个&ltscript&gtalert('pwnd')&lt/script&gt会发生什么呢？</p>
+	<p>那我的HTML就会认为上述的代码是一个JavaScript语句，并执行。那么如果我发出的是一条攻击指令呢？比如让我的帐户余额变成100000000。</p>
+	<h2>嵌套模板</h2>
+	<p>Web应用中常常会有一些相似的页面，比如头部菜单，导航栏等。这些布局都可以通过嵌套模板实现</p>
+	<p>之前我们嵌套模板的方式是{{template "test.html" .}}这样的，但是由于使用了文件名作为模板名，那么因为每个页面都拥有他们各自的布局模板文件，最终程序无法拥有任何可共用的布局。其实就是说，这样的话，一个html文件就只能是一个模板。</p>
+	<p>但是可以通过显示地定义模板来解决这个问题</p>
+	<p>
+<pre class="codepre">
+{{define "layout"}}
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="utf-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+        {{template "content"}}
+&lt/body&gt
+&lt/html&gt
+{{end}}
+
+{{define "content"}}
+&lth1&gtHelloword&lt/h1&gt
+{{end}}
+</pre>
+	</p>
+	<p>这样就在一个文件中定义了两个模板layout和content</p>
+	<p>这样定义的话模板引擎需要有点变化，需要调用t.ExecuteTemplate(w,"layout","")，而不是t.Execute(w,"")。前者会执行一个模板</p>
+	<p>不仅可以在同一个模板文件里面定义多个不同模板，还可以在不同的模板文件里定义同名的模板</p>
+	<h2>通过块动作定义模板</h2>
+	<p>这个动作允许用户定义一个模板并且立即使用。</p>
+	<p>
+<pre class="definepre">
+{{ block arg }}
+	Dot is set to arg
+{{ end }}
+</pre>
+	</p>
+	<p>写起来像是这样:
+<pre class="codepre">
+{{ block "content" . }}
+	模板内容
+{{ end }}
+</pre>
+	</p>
+	<p>就是一个快速定义一个模板。上述语句其实就是定义了一个content模板</p>
+</body>
+</html>

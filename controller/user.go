@@ -7,12 +7,22 @@ import (
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
 	user := &model.User{}
 	user.Username = r.PostFormValue("username")
 	user.Password = r.PostFormValue("password")
 	user.SelectByNameAndPassword()
 	if user.Id > 0 {
-		model.WriteTemplate(w, "views/pages/user/login_success.html", user.Username)
+		//cookie结构
+		cookie := http.Cookie{
+			Name:     "_cookie",
+			Value:    user.Username,
+			HttpOnly: true,
+			MaxAge:   3600,
+		}
+		//写入cookie
+		http.SetCookie(w, &cookie)
+		http.Redirect(w, r, "/index", 302)
 	} else {
 		model.WriteTemplate(w, "views/pages/user/login.html", "用户名或密码错误")
 	}
@@ -83,4 +93,13 @@ func CheckEmail(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.Write([]byte("邮箱格式不正确"))
 	}
+}
+func Mypage(w http.ResponseWriter, r *http.Request) {
+	model.WriteHTML(w, "views/pages/user/mypage.html")
+}
+func Unlogin(w http.ResponseWriter, r *http.Request) {
+	cookie, _ := r.Cookie("_cookie")
+	cookie.MaxAge = -1
+	http.SetCookie(w, cookie)
+	http.Redirect(w, r, "/index", 302)
 }

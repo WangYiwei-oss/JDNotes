@@ -19,3 +19,17 @@ func WriteTemplate(w http.ResponseWriter, path string, data interface{}) {
 	t := template.Must(template.ParseFiles(path))
 	t.Execute(w, data)
 }
+
+func CheckLogin(w http.ResponseWriter, r *http.Request) bool {
+	cookie, err := r.Cookie("_cookie")
+	if err == nil {
+		u := User{Username: cookie.Value}
+		u.SelectByUsername()
+		if u.Id > 0 {
+			return true
+		} else {
+			return false
+		}
+	}
+	return false
+}

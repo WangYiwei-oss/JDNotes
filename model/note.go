@@ -85,6 +85,7 @@ func ScanAllNotes(dir string) *[]Note {
 
 //将dir下的所有的文件信息写入mysql
 func ScanAllNotesToMysql(dir string) {
+	utils.Db.Exec("DELETE FROM notes")
 	ns := ScanAllNotes(dir)
 	for _, n := range *ns {
 		utils.Db.Exec("INSERT INTO notes(id,title,filepath,firstclass,secondclass,thirdclass)VALUES(?,?,?,?,?,?)", n.Id, n.Title, n.Filepath, n.Firstclass, n.Secondclass, n.Thirdclass)

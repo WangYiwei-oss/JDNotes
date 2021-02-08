@@ -1,0 +1,318 @@
+<!-->Golang<-->
+<!-->GoWeb编程<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>处理请求</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>处理请求</h1>
+	<h2>请求和响应</h2>
+	<h3>HTTP报文</h3>
+	<p>HTTP报文分为HTTP请求报文和HTTP响应报文两种</p>
+	<h4>HTTP请求报文</h4>
+	<img src="./HTTP请求报文详解.png" alt="">
+	<p>HTTP报文主要包括请求行，请求头部以及请求的数据</p>
+	<p><strong>请求行(HTTP请求报文的第一行)</strong></p>
+	<p>请求行由方法字段，URL字段和HTTP协议版本字段。严格区分大小写</p>
+	<p><strong>方法字段</strong></p>
+	<p>就是GET、POST、HEAD、PUT等</p>
+	<p><strong>URL</strong></p>
+	<p>一个完整的包括类型，主机名和可选路径名的统一资源引用名,如http://www.example.com/path/file.html</p>
+	<p><strong>HTTP首部</strong></p>
+	<p>HTTP请求首部包括：通用首部，实体首部，请求首部</p>
+	<h4>HTTP响应报文</h4>
+	<img src="./HTTP响应报文详解.png" alt="">
+	<p>HTTP响应报文同样分为三部分，状态行，首部行，实体</p>
+	<p><strong>状态行</strong></p>
+	<p>状态码：1xx:请求被接受，需要继续处理</p>
+	<p>2xx: 请求已被服务器接收，理解并接受</p>
+	<p>3xx: 需要客户端采取进一步的操作才能完成请求</p>
+	<p>4xx: 客户端类的错误</p>
+	<p>5xx: 服务器类的错误</p>
+
+	<h3>Request结构</h3>
+	<p>http.Request源码：
+<pre class="definepre">
+type Request struct{
+	//请求行开始
+	Method string	//Get, Post, PUT等。缺省代表GET，不支持CONNECT
+	URL *url.URL	//见下面
+	Proto string	//协议，比如HTTP/1.0
+	ProtoMajor int	//协议大版本号，比如1
+	ProtoMinor int	//协议小版本好，比如0
+	//请求行结束
+	//首部行开始
+	Header Header
+	//首部行结束
+	//实体开始
+	Body io.ReadCloser	//实体的内容
+	ContentLength int64	//内容的长度，-1表示未知长度
+	Host string 		//
+	Form url.Values		//储存以URL形式请求的表单数据
+	PostForm url.Values 	//储存以application格式请求的表单数据
+	MultipartForm *multipart.Form //储存以multipart格式请求的表单数据
+	//实体结束
+}
+</pre>
+	</p>
+	<h3>请求URL</h3>
+	<p>URL的一般格式为：</p>
+<pre class="definepre">
+scheme://[userinfo@]host/path[?query][#fragment]
+</pre>
+<p>就比如：http://www.example.com/post?id=123&ampthread_id=456</p>
+	<p>url.URL源码：
+<pre class="definepre">
+type URL struct {
+	Scheme string	//协议,http,https等
+	Opaque string	//编码后的不透明数据
+	User *Userinfo	//用户名和密码信息
+	Host string	//域名host or host:port，www.baidu.com等
+	Path string	//路由,/path等
+	RawQuery string	//上面的例子中RawQuery="id=123&ampthread_id=456"
+	//可以直接语法解析获得键值对或者用Request结构的Form字段
+	Fragment string	//引用的片段，如果是浏览器发送的，则没有这一部分
+}
+</pre>
+	</p>
+	<h3>请求首部Header</h3>
+	<p>先介绍一下URL的首部</p>
+	<a href="./URL首部.html">URL首部详情</a>
+	<p>为了表示出来URL的首部，http.Header结构使用了一个map[string][]string。是一个键类型为string，值类型为string切片的map</p>
+	<p>
+<pre class="codepre">
+就比如说一个URL首部的为：
+Host: example.com
+accept-encoding: gzip, deflate
+Accept-Language: en-US
+fOO: Bar
+foo: two
+那么：
+Header = map[string][]string{
+	"Accept-Encoding": {"gzip, deflate"},
+	"Accept-Language": {""en-US},
+	"Foo": {"Bar", "two"},
+}
+</pre>
+	</p>
+	<p>可以注意到Header不会包含Host，会被提升到http.Request.Host去。有格式化的作用(首字母大写)，有合并的作用(两个foo合并了)</p>
+	<p>给我们的web服务器加一行代码fmt.Println(r.Header)，再访问一次试一试</p>
+	<p>
+<pre class="codepre">
+map[Accept:[text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8] Accept-Encoding:[gzip, deflate] Accept-Language:[zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2] Connection:[keep-alive] Upgrade-Insecure-Requests:[1] User-Agent:[Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:83.0) Gecko/20100101 Firefox/83.0]]
+</pre>
+	</p>
+	<p>可以看到打印出来了首部的信息，看见了Accept,Accept-Encoding,Accept-Language, Connection, Upgrade, User-Agent,这都是浏览器为我们自动生成的</p>
+	<p>我们还可以用r.Header.Get("Accept=Encoding")来仅仅获取Accept-Encoding这单独的一项</p>
+	<h3>请求主体(Body)</h3>
+	<p>Body其实是一个io.ReadCloser，这个接口既包含了Read签名也包含了Closer签名。所以可以用两种方法去读取Body中的内容。</p>
+	<p>比如用Read方法来读取：
+<pre class="codepre">
+body := make([]byte, r.ContentLength)
+        r.Body.Read(body)
+</pre>
+	</p>
+	<p>先通过r.ContentLength来获取了主体数据的字节长度，再根据这个长度创建了切片，然后把切片传给Read读取内容</p>
+	<h2>Go与HTML表单</h2>
+	<h3>HTML表单</h3>
+	<p>HTML表单通常长得像这个样子：
+<pre class="codepre">
+&ltform action="/process" method="post"&gt
+	&ltinput type="text" name="firstname"/&gt
+	&ltinput type="text" name="secondname"/&gt
+	&ltinput type="submit"&gt
+&lt/form&gt
+</pre>
+	</p>
+	<p>上述表单会有两个输入字段以及一个提交按钮，当递交表单的时候，表单数据会提交到名为/process的页面。提交的方法将会是POST</p>
+	<p>表单还可以指定提交的内容类型(content type)决定了POST请求在发送键值对时将使用何种形式。浏览器至少支持application/x-www-form-urlencoded和multipart/form-data两种编码方式。通过form标签的enctype属性来指定</p>
+	<p>如果是第一种形式，那么HTTP请求主体将会看上去是这个样子
+<pre class="codepre">
+firstname=我要胖到&ampsecondname=160
+</pre>
+	</p>
+	<p>键值对的健和值将会用=链接，不同键值对之间用&amp链接</p>
+	<p>如果是第二种形式，那么表单中的数据将会被转换成一条MIME报文：表单中的每个键值对都构成了这条报文的一部分，并且每个键值对都带有他们各自的内容类型以及内容配置</p>
+	<p>可能会是这种样子：
+<pre class="codepre">
+------WebKitFormBoundaryMPNjKoiusdW
+	Content-Disposition: form-data; name="firstname"
+
+	我要胖到
+------WebKitFormBoundaryMPNjassdaaAA
+	Content-Disposition: form data; name="lastname"
+
+	160
+------WebKitFormBoundaryMPNKpeasLico
+</pre>
+	</p>
+	<p>如果传递的是比较简单的文本，那么使用URL编码格式比较好。如果需要传递大量数据(如上传文件)使用第二种形式比较好。还可以使用Base64的编码以文本形式传递二进制数据。</p>
+	<p>上面的方法不一定非得是post，也可以是get。但是使用GEt去传递表单的时候不会包含请求主体，表单数据将会以键值对的形式包含在请求的URL里面，而不是通过主体传送</p>
+	<h2>Form字段</h2>
+	<p>我们还记得在request结构体中有一个Form成员。就是用来记录表单的</p>
+	<p>用户可以将URL，主体，或者两者记录的数据提取到该结构的Form，PostForm和MultipartForm中。</p>
+	<p>一般步骤为：</p>
+	<ol>
+		<li>调用ParseForm方法或者ParseMultipartForm方法，对请求进行语法分析</li>
+		<li>根据1调用的方法，访问相应的Form字段，PostForm字段或MultipartForm字段</li>
+	</ol>
+	<p>其中Form的类型是url.Values。其实就是一个map[string][]string</p>
+	<p>下面是一个例子：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "io/ioutil"
+        "net/http"
+)
+
+func f1(w http.ResponseWriter, r *http.Request) {
+<strong>
+        r.ParseForm()
+        fmt.Println(r.Form)
+</strong>
+}
+
+func f(w http.ResponseWriter, r *http.Request) {
+        a, _ := ioutil.ReadFile("./test.html")
+        w.Write(a)
+}
+
+func main() {
+        http.HandleFunc("/process", f1)
+        http.HandleFunc("/", f)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p>其中./test.html就是上面写的HTML表单的实例，那么访问127.0.0.1:8000然后输入我的姓名并提交后。服务器这边打印出了我的结果
+<pre class="codepre">
+map[firstname:[我要胖到] secondname:[160]]
+</pre>
+	</p>
+	<h3>文件</h3>
+	<p>前面说道multipart.form-data编码通常用于实现文件上传功能，那么我们就来看一个实例。其实就把前面的改造一下</p>
+	<p>test.html
+<pre class="codepre">
+&lt!DOCTYPE html&gt
+&lthtml lang="en"&gt
+&lthead&gt
+        &ltmeta charset="UTF-8"&gt
+        &lttitle&gt&lt/title&gt
+&lt/head&gt
+&ltbody&gt
+	&ltform action="/process" method="post" <strong>enctype="multipart/form-data"</strong>&gt
+                &ltinput type="text" name="firstname" /&gt
+                &ltinput type="text" name="secondname" /&gt
+		<strong>&ltinput type="file" name="uploaded"&gt</strong>
+                &ltinput type="submit" /&gt
+        &lt/form&gt
+&lt/body&gt
+&lt/html&gt
+</pre>
+	</p>
+	<p>web.go
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "io/ioutil"
+        "net/http"
+)
+
+func f1(w http.ResponseWriter, r *http.Request) {
+	<strong>
+	r.ParseMultipartForm(1024)
+        fileHeader := r.MultipartForm.File["uploaded"][0]
+        file, err := fileHeader.Open()
+        if err == nil {
+                data, err := ioutil.ReadAll(file)
+                if err == nil {
+                        fmt.Printf("%s", data)
+                }
+        }</strong>
+}
+
+func f(w http.ResponseWriter, r *http.Request) {
+        a, _ := ioutil.ReadFile("./test.html")
+        w.Write(a)
+}
+
+func main() {
+        http.HandleFunc("/process", f1)
+        http.HandleFunc("/", f)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p>这样的话就可以把我们在浏览器上传的文件在服务器这边打印出来</p>
+	<h2>ResponseWriter</h2>
+	<p>向用户发送相应，要使用ResponseWriter接口，这个接口有三个方法：</p>
+	<ul>
+		<li>Write</li>
+		<li>WriteHeader</li>
+		<li>Header</li>
+	</ul>
+	<h3>对ResponseWriter进行写入</h3>
+	<p>Write方法接受一个字节数组作为参数，并将数组中的字节写入HTTP响应的主体中。</p>
+	<p>WriteHeader方法用来接受一个代表HTTP相应状态码的整数作为参数，并将这个整数用作HTTP响应的返回码。默认会使用200OK作为响应的状态码</p>
+	<p>Header方法可以取得一个由首部组成的映射，修改这个映射就可以修改首部。比如w.Header().Set("Location","http://baidu.com/")</p>
+	<h2>Cookie</h2>
+	<p>Go语言中cookie用Cookie结构来表示：
+<pre class="definepre">
+type Cookie struct{
+	Name string
+	Value string
+	Path string
+	Domain string
+	Expires time.Time
+	RawExpires string
+	MaxAge int
+	Secure bool
+	Raw string
+	Unparsed []string
+}
+</pre>
+	</p>
+	<p>Expires字段和MaxAge字段都可以用于设置cookie的过期时间，其中Expirse用于明确指定cookie应该在什么时候过期。MaxAge指定了cookie创造出来能存活多少秒</p>
+	<p>使用http.ResponseWriter.Header.Set()和Add()方法或者是http.SetCookie()方法来将cookie发送到服务器</p>
+	<p>使用http.Request.Header["Cookie"]可以获取cookie</p>
+	<p>下面是一个实例：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "net/http"
+)
+
+func setCookie(w http.ResponseWriter, r *http.Request) {
+        c1 := http.Cookie{
+                Name:   "state",
+                Value:  "ok",
+                MaxAge: 300,
+                Secure: true,
+        }
+        http.SetCookie(w, &ampc1)
+        w.Write([]byte("hello"))
+}
+
+func getCookie(w http.ResponseWriter, r *http.Request) {
+        h := r.Header["Cookie"]
+        fmt.Printf("%s", h)
+}
+
+func main() {
+        http.HandleFunc("/", setCookie)
+        http.HandleFunc("/cookie", getCookie)
+        http.ListenAndServe("0.0.0.0:8000", nil)
+}
+</pre>
+	</p>
+	<p>访问根目录的时候会创建cookie，访问/cookie的时候会在服务器端打印cookie的内容。并且重启浏览器后还会存在，直到五分钟过去</p>
+</body>
+</html>

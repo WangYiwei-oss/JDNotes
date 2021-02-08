@@ -1,0 +1,41 @@
+package main
+
+import "fmt"
+
+func main() {
+	chan1 := make(chan int, 2)
+	chan2 := make(chan int, 2)
+	syncChan := make(chan struct{}, 2)
+	go func() {
+		for i := 0; i &lt 10; i++ {
+			select {
+			case chan1 &lt- i:
+			case chan2 &lt- (10 - i):
+			}
+		}
+		close(chan1)
+		close(chan2)
+		syncChan &lt- struct{}{}
+	}()
+	go func() {
+	Loop:
+		for {
+			var ok1 bool
+			var ok2 bool
+			var a int
+			var b int
+			select {
+			case a, ok1 = &lt-chan1:
+				fmt.Println(a)
+			case b, ok2 = &lt-chan2:
+				fmt.Println(b)
+			}
+			if !ok1 && !ok2 {
+				break Loop
+			}
+		}
+		syncChan &lt- struct{}{}
+	}()
+	&lt-syncChan
+	&lt-syncChan
+}

@@ -1,0 +1,30 @@
+<!-->Golang<-->
+<!-->GoWeb编程<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Go与Cookie</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<p>当一个用户登陆成功后，服务器必须在后续的请求中标示出这是一个已经登陆的用户。为了做到这一点，服务器通常会在响应的首部写入一个cookie，而客户端在接收这个cookie之后则会把它储存到浏览器里面。</p>
+	<p>Cookie是一种储存在客户端的，体积较小的信息。这些信息最初都是由服务器通过HTTP响应报文发送的。每当客户端向服务器发送一个HTTP请求时，都会把cookie一并发送。</p>
+	<p>Go语言的http.Cookie结构体如下：
+<pre class="definepre">
+type Cookie struct{
+	Name string
+	Value string
+	Path string
+	Domain string
+	Expires time.Time
+	RawExpires string
+	MaxAge int	//持续时间
+	Secure bool
+	HttpOnly bool
+	Raw string
+	Unparsed []string
+}
+</pre>
+	</p>
+</body>
+</html>

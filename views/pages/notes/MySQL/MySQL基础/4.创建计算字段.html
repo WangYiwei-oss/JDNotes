@@ -1,0 +1,31 @@
+<!-->MySQL<-->
+<!-->MySQL基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>创建计算字段</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>创建计算字段</h1>
+	<h2>什么是计算字段</h2>
+	<p>有时候我们需要对数据进行转换，计算，格式化的操作。就比如说求一列数据的平均值。我们不希望在应用程序中再对数据进行处理，这时就要用到计算字段</p>
+	<p>计算字段不实际存在于数据库表中，是运行时在SELECT语句内创建的</p>
+	<h2>字段(field)</h2>
+	<p>字段：基本上与列的意思相同，经常互相转换使用，但数据库列一般称为列，字段通常用在计算字段上</p>
+	<h2>拼接字段</h2>
+	<p>将多个列的数据拼接返回，使用Concat()函数：
+<pre class="definepre">
+SELECT <strong>Concat(列名1,字符,列名2) AS 别名</strong>
+FROM 表名
+</pre>
+	</p>
+	<h2>执行算数计算</h2>
+	<p>算数计算可以直接计算，然后用AS指定给字段：
+<pre class="definepre">
+SELECT 列名1,列名2,<strong>列名1*列名2 AS 字段名1</strong>
+FROM 表名
+</pre>
+	</p>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!-->Golang<-->
+<!-->Go并发编程<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Goroutine</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Goroutine</h1>
+	<p>go关键字是用户程序启用goroutine的唯一途径</p>
+	<p>一条go语句是由go关键字和表达式组成的，这意味着表达式必须是带括号的可执行函数</p>
+	<p>所以如果写成匿名函数一定不要忘记最后的括号:
+<pre class="codepre">
+go func(){
+	fmt.Println("go并发编程")
+}<font style="color:red">()</font>
+</pre>
+	</p>
+	<p>go语句后面的表达式是可以带有返回值的，但是这个返回值将会被抛弃，没有任何作用，如果想要让goroutine返回一些结果的话，需要用到channel</p>
+	<p>首先看一个神奇的程序:
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+)
+
+func main() {
+        as := []string{"a", "b", "c", "d", "e"}
+        for _, a := range as {
+                go fmt.Println(a)
+        }
+}
+</pre>
+	</p>
+	<p>运行之后发现没有任何的输出，这是由于输出通常都比较慢，这时main已经执行完毕，程序结束了，所以goroutine没有来得及输出任何东西就被杀死了</p>
+	<p>那么让main函数等一会：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+func main() {
+        as := []string{"a", "b", "c", "d", "e"}
+        for _, a := range as {
+                go fmt.Println(a)
+        }
+	<font style="color:red">time.Sleep(time.Second)</font>
+}
+执行结果为：
+d
+b
+a
+c
+e
+</pre>
+	</p>
+	<p>可以发现执行确实输出了abcde，但是顺序是错误的，这是由于goroutine都是并发执行的，不保证先后顺序</p>
+	<p>再来看一个坑：
+<pre class="codepre">
+package main
+
+import (
+          "fmt"
+          "time"
+)
+
+func main() {
+          as := []string{"a", "b", "c", "d", "e"}
+	  for _, a := range as {
+	  <font style="color:red">go func() { fmt.Println(a) }()</font>
+          }
+	  time.Sleep(time.Second)
+}
+执行结果居然：
+e
+e
+e
+e
+e
+</pre>
+	</p>
+	<p>居然全都是e，这是由于在循环里面使用了错误的循环闭包，这里的a实际上是值为每一个切片元素值的单一变量，是一个引用。而这些闭包都绑定到了这一个变量。所以如果说这些goroutine都在for循环结束之后才执行的话，那就只能输出最后一个字符e了</p>
+	<p>那么我让每次循环都等一会：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+func main() {
+        as := []string{"a", "b", "c", "d", "e"}
+        for _, a := range as {
+                go func() { fmt.Println(a) }()
+		<font style="color:red">time.Sleep(time.Millisecond)</font>
+        }
+        time.Sleep(time.Second)
+}
+执行结果:
+a
+b
+c
+d
+e
+</pre>
+	</p>
+	<p>结果正确了，但这是非常低效的。那么正确的做法是给goroutine传入一个拷贝值，也就是把a取值放到goroutine的栈上，这样就会得到正确的结果</p>
+	<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "time"
+)
+
+func main() {
+        as := []string{"a", "b", "c", "d", "e"}
+        for _, a := range as {
+		<font style="color:red">go func(a interface{}) { fmt.Println(a) }(a)</font>
+        }
+        time.Sleep(time.Second)
+}
+执行结果：
+c
+a
+b
+d
+e
+</pre>
+	</p>
+	<p>可以看到执行结果虽然还是不按顺序，但是是正确的</p>
+	<h2>主goroutine的运作</h2>
+	<p>封装main函数的goroutine称为主goroutine，通常由runtime.m0负责运作</p>
+	<p>主goroutine的执行顺序如下：</p>
+	<ol>
+		<li>设定goroutine的最大栈尺寸(32位机器为256MB，64位机器为1GB)</li>
+		<li>在当前M的g0上执行系统监测任务，主要作用是为调度器查漏补缺</li>
+		<li>检查当前M是否是runtime.m0</li>
+		<li>创建一个特殊的defer语句，用来为goroutine的任何情况的退出做善后处理</li>
+		<li>启用专用于在后台清扫内存垃圾的goroutine，并设置GC可用标识</li>
+		<li>执行main包中的init函数</li>
+		<li>执行main函数</li>
+	</ol>
+</body>
+</html>

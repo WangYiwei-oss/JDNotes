@@ -1,0 +1,342 @@
+<!-->Golang<-->
+<!-->GoWeb编程<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>接收请求</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>接收请求</h1>
+	<ul>主要内容：
+		<li>Go语言的net/http标准库的使用方法</li>
+		<li>通过net/http库提供HTTP服务的方法</li>
+		<li>关于处理器以及处理器函数</li>
+		<li>在服务器上使用多路复用器的方法</li>
+	</ul>
+	<h2>Go Web服务器</h2>
+	<p>创建一个HTTP服务器只需要使用http.ListenAndServe就可以了。函数</p>
+	<p>看一下函数原型：
+<pre class="definepre">
+func ListenAndServe(addr string, handler Handler) error {
+	server := &ampServer{Addr:addr, Handler:handler}
+	return server.ListenAndServe()
+}
+</pre>
+	</p>
+	<p>可以传入两个参数，addr是监听的地址，地址可以为空，默认是0.0.0.0:80。handler是负责处理请求的处理器，可以传入nil，那么服务器将使用默认的多路复用器DefaultServeMux</p>
+	<p>用户除了可以通过ListenAndServe的参数对服务器的网络地址和处理器进行配置以外。还可以通过http.Server结构对服务器进行更详细的配置。也可以看到ListenAndServe函数其实里面也是调用了Server的方法。</p>
+	<p>看一下http.Server结构：
+<pre class="definepre">
+type Server struct {
+    Addr           string        // 监听的TCP地址，如果为空字符串会使用":http"
+    Handler        Handler       // 调用的处理器，如为nil会调用http.DefaultServeMux
+    ReadTimeout    time.Duration // 请求的读取操作在超时前的最大持续时间
+    WriteTimeout   time.Duration // 回复的写入操作在超时前的最大持续时间
+    MaxHeaderBytes int           // 请求的头域最大长度，如为0则用DefaultMaxHeaderBytes
+    TLSConfig      *tls.Config   // 可选的TLS配置，用于ListenAndServeTLS方法
+    // TLSNextProto（可选地）指定一个函数来在一个NPN型协议升级出现时接管TLS连接的所有权。
+    // 映射的键为商谈的协议名；映射的值为函数，该函数的Handler参数应处理HTTP请求，
+    // 并且初始化Handler.ServeHTTP的*Request参数的TLS和RemoteAddr字段（如果未设置）。
+    // 连接在函数返回时会自动关闭。
+    TLSNextProto map[string]func(*Server, *tls.Conn, Handler)
+    // ConnState字段指定一个可选的回调函数，该函数会在一个与客户端的连接改变状态时被调用。
+    // 参见ConnState类型和相关常数获取细节。
+    ConnState func(net.Conn, ConnState)
+    // ErrorLog指定一个可选的日志记录器，用于记录接收连接时的错误和处理器不正常的行为。
+    // 如果本字段为nil，日志会通过log包的标准日志记录器写入os.Stderr。
+    ErrorLog *log.Logger
+    // 内含隐藏或非导出字段
+}
+</pre>
+	</p>
+	<h2>通过HTTPS提供服务</h2>
+	<p>其他都一样，然后调用http.Server.ListenAndServeTLS方法。方法需要提供证书和私匙。一般来说证书是由证书分法机构签发。但我们可以生成一个自己的</p>
+	<p>代码如下：
+<pre class="codepre">
+package main
+
+import (
+        "crypto/rand"
+        "crypto/rsa"
+        "crypto/x509"
+        "crypto/x509/pkix"
+        "encoding/pem"
+        "math/big"
+        "net"
+        "os"
+        "time"
+)
+
+func main() {
+        max := new(big.Int).Lsh(big.NewInt(1), 128)
+        serialNumber, _ := rand.Int(rand.Reader, max)
+        subject := pkix.Name{
+                Organization:       []string{"Manning Publications Go."},
+                OrganizationalUnit: []string{"Books"},
+                CommonName:         "Go Web Programming",
+        }
+        template := x509.Certificate{
+                SerialNumber: serialNumber,
+                Subject:      subject,
+                NotBefore:    time.Now(),
+                NotAfter:     time.Now().Add(365 * 24 * time.Hour),
+                KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+                ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+                IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
+        }
+        pk, _ := rsa.GenerateKey(rand.Reader, 2048)
+        derBytes, _ := x509.CreateCertificate(rand.Reader, &amptemplate, &amptemplate, &amppk.PublicKey, pk)
+        cerOut, _ := os.Create("cert.pem")
+        pem.Encode(cerOut, &amppem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+        cerOut.Close()
+        keyOut, _ := os.Create("key.pem")
+        pem.Encode(keyOut, &amppem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(pk)})
+        keyOut.Close()
+}
+</pre>
+	</p>
+	<p>代码运行后会生成两个文件,cert.pem是证书，和key.pem是私匙。注意这个证书只能运行在127.0.0.1上</p>
+	<p>然后就可以写https服务器了，比如：
+<pre class="codepre">
+package main
+
+import (
+        "net/http"
+)
+
+func main() {
+        server := http.Server{
+                Addr:    "127.0.0.1:8000",
+                Handler: nil,
+        }
+        server.ListenAndServeTLS("cert.pem", "key.pem")
+}
+</pre>
+	</p>
+	<p>用浏览器输入https://127.0.0.1:8000就可以访问啦。浏览器可能会报警说证书不安全，忽略警告就好</p>
+	<h2>处理器和处理器函数</h2>
+	<p>在前面的例子中，访问只能得到404 not found的报错，这是因为服务器尚未实现任何功能。所以服务器的多路复用器在接收到请求之后找不到任何处理器来处理请求。</p>
+	<h3>处理请求</h3>
+	<p>在Go语言中，一个处理器就是一个拥有ServeHTTP方法的接口，这个ServeHTTP方法需要接受两个参数：ResponseWriter接口和Request结构的指针。换句话说，任何接口只要实现了ServeHTTP(http.ResponseWriter,*http.Request)，那么他就是一个处理器</p>
+	<p>我们之前提到的ListenAndServe函数接受了nil之后使用的默认的DefaultServeMux也叫做处理器，这个处理器也实现了ServeHTTP方法，所以也是一个ServeHTTP接口。只不过这个处理器功能比较特殊，是根据请求的URL将请求重定向到不同的处理器。</p>
+	<p>那么我们可以编写一个自己的处理器，将访问处理为返回一个helloword</p>
+	<p class="codepre">
+package main
+
+import (
+        "net/http"
+)
+
+type aaa struct{}
+
+func (a *aaa) ServeHTTP(w http.ResponseWriter, h *http.Request) {
+        w.Write([]byte("Hello World"))
+}
+
+func main() {
+        var a aaa
+        server := http.Server{
+                Addr:    "127.0.0.1:8000",
+                Handler: &ampa,
+        }
+        server.ListenAndServe()
+}
+	</p>
+	<p>启动服务，用浏览器打开127.0.0.1:8000可以看到我们自定义的处理器发挥了作用</p>
+	<p>但是此时我们访问127.0.0.1:8000/askdhjk也会得到相同的结果。/后面的叫做请求路由，由于我们没有使用多路复用器。所以无论访问什么网址，得到的都是helloworld的响应</p>
+	<h3>使用多个处理器</h3>
+	<p>为了让服务器可以识别路由，并对不同的路由进行不同的相应。还是换回DefaultServeMux作为处理器</p>
+	<p>先看一下代码：
+import (
+        "net/http"
+)
+
+type dealHello struct{}
+
+func (h *dealHello) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("HelloWorld"))
+}
+
+type dealDance struct{}
+
+func (d *dealDance) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("Lets Dance"))
+}
+
+func main() {
+        server := http.Server{
+                Addr:    "127.0.0.1:8000",
+                Handler: nil,
+        }
+        hello := dealHello{}
+        dance := dealDance{}
+        http.Handle("/hello", &amphello)
+        http.Handle("/dance", &ampdance)
+        server.ListenAndServe()
+}
+	</p>
+	<p>这次通过浏览器访问不同路由/hello和/dance就会得到不同的相应</p>
+	<p>但是DefaultServeMux是怎么通过http包的函数知道有哪些处理器呢？看一下源码就知道了：
+<pre class="codepre">
+func Handle(pattern string, handler Handler) { DefaultServeMux.Handle(pattern, handler) }
+</pre>
+	</p>
+	<p>原来http.Handle只是一个包装函数，里面真正调用的是DefaultServeMux的Handle方法。所以每次通过http.Handle添加新的handle，它就会知道</p>
+	<h3>处理器函数</h3>
+	<p>上面的响应处理太简单了吧！就返回一个Hello World而已，还创建了一个处理器类去处理它，简直是大材小用了。其实我们可以用处理器函数来完成上面的功能</p>
+	<p>先看一下代码：
+<pre class="codepre">
+package main
+
+import (
+        "net/http"
+)
+
+func f1(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("HelloWorld"))
+}
+
+func f2(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("Lets Dance"))
+}
+
+func main() {
+        server := http.Server{
+                Addr:    "127.0.0.1:8000",
+                Handler: nil,
+        }
+        http.HandleFunc("/hello", f1)
+        http.HandleFunc("/dance", f2)
+        server.ListenAndServe()
+}
+</pre>
+	</p>
+	<p>可以看到我们只是定义了两个函数而已，并没有实现ServeHTTP方法。但是也成功地用作了处理器。其实是HandleFunc里面定义了匿名类HandlerFunc，并用ServeHTTP方法包装了一下我们的函数</p>
+	<h3>串联多个处理器和处理器函数</h3>
+	<p>Go语言有函数式编程语言的一些特性。程序可以将一个函数传递给另外一个函数，又或者通过标识符去引用一个具名函数。所以程序可以实现将函数f1传递给f2，然后在f2执行完某些操作之后调用f1</p>
+	<p>处理器可以专注于处理请求。有些可以复用的代码，比如日志记录，安全检查，错误处理等，可以单独实现，并串联起来</p>
+	<p>举个例子：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "net/http"
+)
+
+func f1(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("HelloWorld"))
+}
+
+func log(h http.HandlerFunc) http.HandlerFunc {
+        return func(w http.ResponseWriter, r *http.Request) {
+                fmt.Println("写个日志")
+                h(w, r)
+        }
+}
+
+func main() {
+        server := http.Server{
+                Addr:    "127.0.0.1:8000",
+                Handler: nil,
+        }
+        http.HandleFunc("/hello", log(f1))
+        server.ListenAndServe()
+}
+</pre>
+	</p>
+	<p>现在再访问127.0.0.1:8000会发现不仅网页输出了HelloWorld，服务器本地还打印了写个日志</p>
+	<p>可以看到log函数接收一个函数变量，并返回了一个函数变量(因为HandleFunc要用http.HandlerFunc函数变量)</p>
+	<p>看一下HandleFunc的源码可以看到要求的函数变量：
+<pre class="definepre">
+func HandleFunc(pattern string, handler func(ResponseWriter, *Request)) {
+        DefaultServeMux.HandleFunc(pattern, handler)
+}
+</pre>
+	</p>
+	<p>再看一下HandlerFunc是一个实现了ServeHTTP的接口，要格外注意这里是Handler，上面是Handle，有个小r别漏了哦
+<pre class="definepre">
+type HandlerFunc func(ResponseWriter, *Request)
+
+func (f HandlerFunc) ServeHTTP(w ResponseWriter, r *Request) {
+        f(w, r)
+}
+</pre>
+	</p>
+	<p>这里我们就理解了为什么要接受并返回一个HandlerFunc。然后log函数又对f1实现了一个包装，这里只是打印了一个“写个日志”。但是，实现了处理器的串联</p>
+	<p>上面是串联处理器函数的。再写一个串联处理器的：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "net/http"
+)
+
+type hello struct{}
+
+func (h *hello) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("HelloWorld"))
+}
+
+func log(h http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                fmt.Println("写个日志")
+                h.ServeHTTP(w, r)
+        })
+}
+
+func main() {
+        server := http.Server{
+                Addr:    "127.0.0.1:8000",
+                Handler: nil,
+        }
+        h := &amphello{}
+        http.Handle("/hello", log(h))
+        server.ListenAndServe()
+}
+</pre>
+	</p>
+	<p>可以看到代码基本一样，只不过log里面返回的是一个HandlerFunc（是一个处理器接口，实现了ServeHTTP）来作为一个http.Handler</p>
+	<h3>ServeMux和DefaultServeMux</h3>
+	<p>ServeMux是一个结构(处理器接口)，它实现了ServeHTTP。DefaultServeMux只是ServeMux的一个实例</p>
+	<p>在使用http.Handle和http.HandleFunc绑定路由的时候。/hello和/hello/是不一样的。如果是/hello的话，路由只会精确匹配，比如你访问了/hello/hi的话，会返回根目录的响应。但如果是/hello/的话，你访问/hello/hi会返回hello的响应</p>
+	<h3>使用其他的多路复用器</h3>
+	<p>由于创建一个多路复用器唯一要做的就是实现ServeHTTP方法，所以完全可以自定义或者使用第三方的多路复用器。比如Gorilla Toolkit,HttpRouter等。</p>
+	<p>默认的ServeMux的一个缺陷是无法使用变量实现URL模式匹配。比如想通过/hello/name去请求一个hello处理器下的name资源就会比较麻烦。必须在程序里面进行语法分析。</p>
+	<p>这里介绍一个轻量级的多路复用器：HttpRouter</p>
+	<p>首先把包导入进来：
+<pre class="codepre">
+go get github.com/julienschmidt/httprouter
+</pre>
+	</p>
+	<p>然后就可以使用了：
+<pre class="codepre">
+package main
+
+import (
+        "github.com/julienschmidt/httprouter"
+        "net/http"
+)
+
+func hello(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+        w.Write([]byte(p.ByName("name")))
+}
+
+func main() {
+        mux := httprouter.New()
+        mux.GET("/hello/:name", hello)
+        server := http.Server{
+                Addr:    "127.0.0.1:8000",
+                Handler: mux,
+        }
+        server.ListenAndServe()
+}
+</pre>
+	</p>
+	<p>可以看到与默认的几乎是一样的，只不过hello函数多了一个第三个参数，就是具名参数，可以在处理器内部通过ByName方法获取</p>
+	<p>再就是不用http.HandleFunc了，而是改用mux.GET方法。注意到路由的地方有个具名参数name。</p>
+	<p>这时再用浏览器访问127.0.0.1:8000/hello/hi浏览器就会打印hi啦</p>
+</body>
+</html>

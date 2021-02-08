@@ -1,0 +1,86 @@
+<!-->Golang<-->
+<!-->Go设计模式<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>观察者模式</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>观察者模式</h1>
+	<p>观察者模式：定义了一种一对多的依赖关系，让多个观察者对象同时监听某一个主题对象。这个主题对象在发生变化时，会通知所有观察者对象，使他们能够自动更新自己</p>
+	<p>观察者就像是有一个UP主，他有很多的粉丝。那么UP主更新视频后，就会给每一个粉丝发送一个更新了数据的通知。那么粉丝就可以知道数据更新了，并且知道更新的内容</p>
+	<p>以下是一个实例：
+<pre class="codepre">
+package Observer
+
+import (
+        "fmt"
+)
+
+type Video struct {	//要更新的视频，只写了个标题
+        Title string
+}
+
+type Up interface {
+        Notify(v *Video)  //发送通知
+        AddFans(f Fan)    //关注up
+        RemoveFans(f Fan) //取关up
+}
+
+type Fan interface {
+        NotifyCallback(v *Video) //接收通知
+        GetID() int
+}
+
+type JianBingGuoLi struct { //Up的实例(也就是我啦)
+        Fans map[int]Fan //储存关注的人
+}
+
+func (j *JianBingGuoLi) Notify(v *Video) {
+        for _, b := range j.Fans {
+                b.NotifyCallback(v)
+        }
+}
+
+func (j *JianBingGuoLi) AddFans(f Fan) {
+        j.Fans[f.GetID()] = f
+}
+func (j *JianBingGuoLi) RemoveFans(f Fan) {
+        delete(j.Fans, f.GetID())
+}
+
+type MiFan struct { //Fan的实例
+        Id int
+}
+
+func (m *MiFan) GetID() int {
+        return m.Id
+}
+
+func (m *MiFan) NotifyCallback(v *Video) {
+        fmt.Println("我是", m.GetID(), "号,收到了", v.Title, "的更新")
+}
+
+package main
+
+import (
+        "../Observer"
+)
+
+func main() {
+        j := Observer.JianBingGuoLi{Fans: make(map[int]Observer.Fan)}
+        a1 := Observer.MiFan{Id: 1}
+        a2 := Observer.MiFan{Id: 2}
+        a3 := Observer.MiFan{Id: 3}
+        j.AddFans(&ampa1)
+        j.AddFans(&ampa2)
+        j.AddFans(&ampa3)
+        v := Observer.Video{Title: "Go设计模式_观察者模式"}
+        j.Notify(&ampv)
+}
+</pre>
+	</p>
+	<p>首先，定义了一个更新内容的结构，用来储存更新视频的内容。然后定义了Up主类和粉丝类(接口其实不是必须的),其中<strong>Up主类要储存粉丝类的map</strong>要有三个方法，关注，取关和通知;粉丝类要有接受通知的方法。那么只要关注了，就可以<strong>通过遍历粉丝类的map来通知到所有的粉丝</strong></p>
+</body>
+</html>

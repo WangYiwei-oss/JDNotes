@@ -1,0 +1,207 @@
+<!-->MySQL<-->
+<!-->MySQL基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>函数</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>函数</h1>
+	<p>大多数SQL支持以下几种函数</p>
+	<ul>
+		<li>用于处理文本串的文本函数</li>
+		<li>用于在数值数据上进行算数操作的数值函数</li>
+		<li>用于处理日期和时间并从这些值中提取特定成分的日期和时间函数</li>
+		<li>返回DBMS正使用的特殊信息的系统函数</li>
+	</ul>
+	<h2>文本处理函数</h2>
+	<p>常用的文本处理函数如下表：</p>
+	<table>
+		<thead>
+		<tr>
+			<td>函数</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>Left()/Right()</td>
+			<td>返回串左边的字符/返回串右边的字符</td>
+		</tr>
+		<tr>
+			<td>Length()</td>
+			<td>返回串的长度</td>
+		</tr>
+		<tr>
+			<td>Locate()</td>
+			<td>找串的一个子串</td>
+		</tr>
+		<tr>
+			<td>Lower()/Upper()</td>
+			<td>转小写/转大写</td>
+		</tr>
+		<tr>
+			<td>LTrim()/RTrim()</td>
+			<td>去掉串左边的空格/去掉串右边的空格</td>
+		</tr>
+		<tr>
+			<td>Soundex()</td>
+			<td>返回串的SOUNDEX值</td>
+		</tr>
+		<tr>
+			<td>SubString()</td>
+			<td>返回字串的字符</td>
+		</tr>
+	</table>
+	<p>其中SOUNDEX是将任何文本串转换为描述其语音表示的字母数字模式</p>
+	<p>一个例子：
+		<pre class="codepre">
+select name,Upper(name) AS nnnn 
+from tt;
+
+运行结果：
++-----------+-----------+
+| name      | nnnn      |
++-----------+-----------+
+| zhangsan  |  ZHANGSAN |
+| lisi      |  LISI     |
++-----------+-----------+
+2 rows in set (0.00 sec)
+		</pre>
+	</p>
+	<h2>日期和时间处理函数</h2>
+	<p>日期和时间采用相应的数据类型和特殊的格式存储，以便能快速和有效地排序和过滤，并且节省储存空间</p>
+	<p>一些常用的日期和时间处理函数如下表：</p>
+	<table>
+		<thead>
+		<tr>
+			<td>函数</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>AddDate()</td>
+			<td>增加一个日期(天、周等)</td>
+		</tr>
+		<tr>
+			<td>AddTime()</td>
+			<td>增加一个时间(时、分等)</td>
+		</tr>
+		<tr>
+			<td>CurDate()</td>
+			<td>返回当前日期</td>
+		</tr>
+		<tr>
+			<td>CurTime()</td>
+			<td>返回当前时间</td>
+		</tr>
+		<tr>
+			<td>Date()</td>
+			<td>返回日期时间的日期部分</td>
+		</tr>
+		<tr>
+			<td>DateDiff()</td>
+			<td>计算两个日期之差</td>
+		</tr>
+		<tr>
+			<td>Date_Add()</td>
+			<td>高度灵活的日期运算函数</td>
+		</tr>
+		<tr>
+			<td>Date_Format()</td>
+			<td>返回一个格式化的日期或时间串</td>
+		</tr>
+		<tr>
+			<td>Day()/Month()/Year()</td>
+			<td>返回一个日期的日/月/年部分</td>
+		</tr>
+		<tr>
+			<td>DayOfWeek()</td>
+			<td>对于一个日期，返回对应的星期几</td>
+		</tr>
+		<tr>
+			<td>Hour()/Minute()/Second()</td>
+			<td>返回一个时间的小时/分钟/秒部分</td>
+		</tr>
+		<tr>
+			<td>Now()</td>
+			<td>返回当前日期和时间</td>
+		</tr>
+		<tr>
+			<td>Time()</td>
+			<td>返回一个日期的年份部分</td>
+		</tr>
+	</table>
+	<p>MySQL中的日期格式为"yyyy-mm-dd"，时间格式为00:00:00</p>
+	<h2>数值处理函数</h2>
+	<p>常用的数值处理函数如下表：</p>
+	<table>
+		<thead>
+		<tr>
+			<td>函数</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>Abs()</td>
+			<td>返回一个数的绝对值</td>
+		</tr>
+		<tr>
+			<td>Cos()/Sin()/Tan()</td>
+			<td>角度的余弦/正弦/正切</td>
+		</tr>
+		<tr>
+			<td>Exp()</td>
+			<td>指数</td>
+		</tr>
+		<tr>
+			<td>Mod()</td>
+			<td>除余</td>
+		</tr>
+		<tr>
+			<td>Pi()</td>
+			<td>返回圆周率</td>
+		</tr>
+		<tr>
+			<td>Rand()</td>
+			<td>返回一个随机数</td>
+		</tr>
+		<tr>
+			<td>Sqrt()</td>
+			<td>平方</td>
+		</tr>
+	</table>
+	<h2>聚集函数</h2>
+	<p>我们经常需要将数据聚集起来(求和，求平均值等)但是不需要把数据显示出来。就需要用到聚集函数</p>
+	<table>
+		<thead>
+		<tr>
+			<td>函数</td>
+			<td>说明</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>AVG()</td>
+			<td>返回列平均值</td>
+		</tr>
+		<tr>
+			<td>COUNT()</td>
+			<td>返回列行数</td>
+		</tr>
+		<tr>
+			<td>MAX()</td>
+			<td>返回列最大值</td>
+		</tr>
+		<tr>
+			<td>MIN()</td>
+			<td>返回列最小值</td>
+		</tr>
+		<tr>
+			<td>SUM()</td>
+			<td>返回列的和</td>
+		</tr>
+	</table>
+	<p>其中COUNT()有两种使用方式:COUNT(*)和COUNT(列名)，第一种会算上NULL，第二种不会算上NULL</p>
+	<p>如果在计算比如说SUM的时候，id相同的我只想加一次，那我可以用DISTINCT关键字比如说SELECT SUM(DISTINCT id) AS sid FROM tt;那就不会有相同的id重复加的情况</p>
+</body>
+</html>

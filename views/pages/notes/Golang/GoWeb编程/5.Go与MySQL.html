@@ -1,0 +1,275 @@
+<!-->Golang<-->
+<!-->GoWeb编程<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Go与MySQL</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Go与MySQL</h1>
+	<div class="kuang">
+	<h2>连接MySQL数据库</h2>
+	<p>首先需要下载驱动。直接使用命令：
+<pre class="definepre">
+go get -u github.com/go-sql-driver/mysql
+</pre>
+	</p>
+	<p>Go与数据库交互需要用到database/sql包，下面是一个连接数据库的实例</p>
+	<p>
+		<pre class="codepre">
+package main
+
+import (
+        "database/sql"
+        "fmt"
+        _ "github.com/go-sql-driver/mysql"
+	//由于只需要初始化驱动，但不需要直接操作驱动，所以声明成了匿名导入
+)
+
+func main() {
+        db, err := sql.Open("mysql", "wangyiwei:123@(127.0.0.1:3306)/test")
+        if err != nil {
+                panic(err)
+        } else {
+                fmt.Println("连接成功")
+        }
+        defer db.Close()
+}
+		</pre>
+	</p>
+	<p>Open()函数第一个参数是数据库驱动名，第二个参数是数据源。</p>
+	<p>数据源格式为："用户名:密码@[连接方式](主机名:端口号)/数据库名"</p>
+	<p>其实Open()只是设置了连接数据库需要的参数，并没有真正的连接数据库</p>
+	</div>
+	<div class="kuang">
+	<h2>查询数据</h2>
+	<p>查询数据的方式有三种，最常用的是通过DB.Query查询，可以查询多行</p>
+	<h3>DB.Query()</h3>
+	<p>我的MySQL里面有这样一个表：
+<pre class="codepre">
+mysql&gt select * from vent;
++---------+----------+
+| vent_id | name     |
++---------+----------+
+|       1 | wanqing  |
+|       2 | alading  |
+|       3 | guoyao   |
+|       4 | maikelin |
++---------+----------+
+</pre>
+	</p>
+	<p>我想用Go语言查询到这个表的所有数据</p>
+	<p>只需要在上面连接的基础上加几句话，可以看到几乎与直接操作MySQL差不多
+<pre class="codepre">
+package main
+
+import (
+        "database/sql"
+        "fmt"
+        _ "github.com/go-sql-driver/mysql"
+)
+
+func main() {
+        db, err := sql.Open("mysql", "wangyiwei:123@(127.0.0.1:3306)/test")
+        if err != nil {
+                panic(err)
+        } else {
+                fmt.Println("连接成功")
+        }
+        defer db.Close()
+        rows, _ := db.Query("SELECT * FROM vent")	//查询语句
+        var id int
+        var name string
+        for rows.Next() {
+                rows.Scan(&ampid, &ampname)
+                fmt.Println(id, name)
+        }
+}
+运行结果：
+连接成功
+1 wanqing
+2 alading
+3 guoyao
+4 maikelin
+
+把查询语句改成"SELECT * FROM vent WHERE vent_id=1"就可以过滤结果
+</pre>
+	</p>
+	<h3>DB.QueryRow()</h3>
+	<p>只能查询一行，查询的语句如下
+		<pre class="codepre">
+        row := db.QueryRow("SELECT * FROM vent")
+        var id int
+        var name string
+        row.Scan(&ampid, &ampname)
+        fmt.Println(id, name)
+运行结果：
+连接成功
+1 wanqing
+		</pre>
+	</p>
+	<h3>DB.Prepare()+Stmt.Query()</h3>
+	<p>Prepare是预先将一个数据库连接和一条sql语句绑定。并返回一个代表绑定后的连接的结构体Stmt。然后再运行Stmt.Query(),Stmt.QueryRow()</p>
+	<p>
+		<pre class="codepre">
+        var id int
+        var name string
+        s, _ := db.Prepare("SELECT * FROM vent")
+        rows, _ := s.Query()
+        for rows.Next() {
+                rows.Scan(&ampid, &ampname)
+                fmt.Println(id, name)
+        }
+
+运行结果:
+1 wanqing
+2 alading
+3 guoyao
+4 maikelin
+		</pre>
+	</p>
+	</div>
+	<div class="kuang">
+	<h2>执行</h2>
+	<p>可以通过DB.Exec()来执行sql语句</p>
+	<p>就比如我利用DB.Exec()来创建一个表，并给这个表增加一列
+<pre class="codepre">
+package main
+
+import (
+        "database/sql"
+        "fmt"
+        _ "github.com/go-sql-driver/mysql"
+)
+
+func main() {
+        db, err := sql.Open("mysql", "wangyiwei:123@(127.0.0.1:3306)/test")
+        if err != nil {
+                panic(err)
+        } else {
+                fmt.Println("连接成功")
+        }
+        defer db.Close()
+        db.Exec("CREATE TABLE goTest( id int NOT NULL AUTO_INCREMENT,name char(50) NOT NULL,address char(50) NULL,PRIMARY KEY(id))")
+        db.Exec("ALTER TABLE goTest ADD number char(50) NULL")
+}
+
+进入mysql查看结果:
+mysql&gt show columns from goTest;
++---------+----------+------+-----+---------+----------------+
+| Field   | Type     | Null | Key | Default | Extra          |
++---------+----------+------+-----+---------+----------------+
+| id      | int      | NO   | PRI | NULL    | auto_increment |
+| name    | char(50) | NO   |     | NULL    |                |
+| address | char(50) | YES  |     | NULL    |                |
+| number  | char(50) | YES  |     | NULL    |                |
++---------+----------+------+-----+---------+----------------+
+</pre>
+	</p>
+	</div>
+	<div class="kuang">
+	<h2>下面写一个实例</h2>
+	<p>这里写一个实例，完成最常见的数据的查询，插入，修改，删除操作</p>
+	<p>
+		<pre class="codepre">
+我有这样一个表，其实就是上面创建的表：
+mysql&gt select * from goTest;
++----+----------+----------+--------+
+| id | name     | address  | number |
++----+----------+----------+--------+
+|  1 | zhangsan | beiji    | 111111 |
+|  2 | lisi     | shanghai | 222222 |
+|  3 | wangwu   | baotou   | 3333   |
+|  5 | zhaosi   | tianjin  | 2222   |
+|  6 | zhaosi   | tianjin  | 2222   |
+|  7 | zhaosi   | tianjin  | 2222   |
+|  8 | zhaosi   | tianjin  | 2222   |
++----+----------+----------+--------+
+		</pre>
+	</p>
+	<p>我要根据这个表的结构来写这个实例</p>
+	<p>
+		<pre class="codepre">
+package main
+
+import (
+        "database/sql"
+        "fmt"
+        _ "github.com/go-sql-driver/mysql"
+)
+
+type Student struct {
+        Id      int
+        Name    string
+        Address string
+        Number  string
+}
+
+var db *sql.DB //数据库的句柄定义为全局，方便所有的函数都可以操作
+
+func init() { //数据库的连接工作在init函数中进行
+        var err error
+        db, err = sql.Open("mysql", "wangyiwei:123@(127.0.0.1:3306)/test") //3306是mysql的默认端口号
+        if err != nil {
+                panic(err)
+        }
+}
+
+func GetAllStudent() (stds []Student, err error) { //查询所有的学生信息
+        rows, err := db.Query("SELECT id,name,address,number FROM goTest") //执行一个查询命令
+        if err != nil {
+                return
+        }
+        defer rows.Close() //记得关闭rows
+        var std Student
+        for rows.Next() { //遍历结果并将它扫描到std中，并且插入返回值切片
+                err = rows.Scan(&ampstd.Id, &ampstd.Name, &ampstd.Address, &ampstd.Number)
+                if err != nil {
+                        return
+                }
+                stds = append(stds, std)
+        }
+        return
+}
+
+func GetPostbyID(id int) (s Student, err error) { //按ID查询，由于必定返回一个结果，所以用QueryRow就可以了
+        err = db.QueryRow("SELECT id,name,address,number FROM goTest WHERE id=?", id).Scan(&amps.Id, &amps.Name, &amps.Address, &amps.Number) //mysql的传参使用的是?，参数里面按顺序给出要传入的参数即可
+        return
+}
+
+func (s *Student) Create() (err error) {
+        stat, err := db.Prepare("INSERT INTO goTest(name,address,number)VALUES(?,?,?)")
+        if err != nil {
+                return
+        }
+        defer stat.Close()
+        _, err = stat.Exec(s.Name, s.Address, s.Number)
+        if err != nil {
+                return
+        }
+        err = db.QueryRow("SELECT LAST_INSERT_ID()").Scan(&amps.Id) //这里插入记录结束后，还需要把原本Student的Id更新。利用了mysql的一个函数
+        return
+}
+
+func (s *Student) Update() (err error) {
+        _, err = db.Exec("UPDATE goTest SET name=?,address=?,number=? WHERE id=?", s.Name, s.Address, s.Number, s.Id)
+        return
+}
+
+func (s *Student) Delete() (err error) {
+        _, err = db.Exec("DELETE FROM goTest WHERE id=?", s.Id)
+        return
+}
+
+func main() {
+        a, _ := GetAllStudent()
+        for _, b := range a {
+                fmt.Println(b)
+        }
+}
+		</pre>
+	</p>
+	</div>
+</body>
+</html>

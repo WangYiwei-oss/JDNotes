@@ -1,0 +1,86 @@
+<!-->MySQL<-->
+<!-->MySQL基础<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>MySQL简介</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>MySQL简介</h1>
+	<p>MySQL是一款数据库软件。</p>
+	<p>基本的架构是服务器-客户端模式的。也就是说MySQL软件由两部分组成——客户端和服务器。</p>
+	<p><strong>服务器(MySQL DBMS)</strong>部分与数据文件直接打交道，关于数据，数据添加，删除和数据更新的所有<strong>请求</strong>都由服务器软件完成。所以服务器部分必须被安装在称为数据库服务器的计算机上</p>
+	<p>上述说的请求，这个请求就来自客户端。客户端是与用户打交道的软件、程序、脚本等。服务器和客户端可以安装在一台计算机上，也可以安装在不同的计算机上</p>
+	认识到MLCC，实物照片，MLCC是干嘛用的。重要性基础原件，用量很大，三大，电容，电感，电阻。其中电容达到90%，每年产值超上千亿。我们国家的MLCC的水平和国外差距较大。(我们只能做中低端的，日本韩国可以)所谓的高低断指的是层数，他们能到1200曾，我们只能到300-400层。
+	层数指的是什么，MLCC的结构放出来，taisuanbei是其中的关键材料，层数越多总储量越多，bao的，zhimi的，没有气孔的taisuanbei陶瓷，最高水平是0.5微米五层层，日本人做的。所以每层100nm。
+	结合MLCC的流言工艺，讲出来怎么做的，难点，就到课题了，流言工艺要很清楚。流言，爹层，ya，烧，放几张不好的图，讲目前的问题是什么
+	总结这个是用流言法做出来的，然后讲流言（是MLCC的一个步骤）是什么东西。
+	现在的流言的问题有什么。然后说我们认为和原料的分散性，种类的关系很大。MLCC用的陶瓷是不能用高温高压的方法的，所以只能用流言法，但是流言法会有一些问题。
+	原料的分散性是关键。一种是买来的，一种是自制的，做对比。原料的，烧成工艺，性能。两大块(制备工艺和性能)，有可能还会研究掺杂。
+	<h2>MySQL的客户机</h2>
+	<p>MYSQL的客户机可以是客户端程序，脚本，程序等。有三个常用的客户机</p>
+	<h3>mysql命令行</h3>
+	<p>安装了MySQL后都会安装一个名为mysql的简单命令行实用程序</p>
+	<h2>简单的mysql命令行语句</h2>
+	<table>
+		<thead><tr>
+			<td>语句</td>
+			<td>说明</td>
+		</tr></thead>
+		<tr>
+			<td>SHOW DATABASES</td>
+			<td>显示所有的数据库</td>
+		</tr>
+		<tr>
+			<td>CREATE DATABASE 数据库名</td>
+			<td>创建数据库</td>
+		</tr>
+
+		<tr>
+			<td>USE 数据库名</td>
+			<td>指定要操作的数据库</td>
+		</tr>
+		<tr>
+			<td>CREATE TABLE 表名 (列名1 列类型1, 列名2, 列类型2)</td>
+			<td>创建一张表(表必须包含至少一列)</td>
+		</tr>
+		<tr>
+			<td>SHOW TABLES</td>
+			<td>显示当前数据库的所有表</td>
+		</tr>
+		<tr>
+			<td>SHOW COLUMNS FROM 表名</td>
+			<td>现实表的所有列</td>
+		</tr>
+		<tr>
+			<td>ALTER TABLE 表名 ADD COLUMN 列名 列类型;</td>
+			<td>给表添加列</td>
+		</tr>
+		<tr>
+			<td>SHOW STATUS</td>
+			<td>显示广泛的服务器状态信息</td>
+		</tr>
+		<tr>
+			<td>SHOW GRANTS</td>
+			<td>显示当前用户的安全权限</td>
+		</tr>
+		<tr>
+			<td>SHOW ERRORS</td>
+			<td>显示服务器错误</td>
+		</tr>
+		<tr>
+			<td>SHOW WARNINGS</td>
+			<td>显示服务器警告信息</td>
+		</tr>
+		<tr>
+			<td>INSERT INTO 表名 (列名1, 列名2) VALUES (值1, 值2)</td>
+			<td>向表中插入数据</td>
+		</tr>
+		<tr>
+			<td>SELECT 列名1,列名2 FROM 表名</td>
+			<td>检索表中的列,检索所有的列可以把列名设为*</td>
+		</tr>
+	</table>
+</body>
+</html>

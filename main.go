@@ -1,32 +1,52 @@
 package main
 
 import (
-	"./controller"
 	"fmt"
-	"io/ioutil"
+	"html/template"
 	"net/http"
+	"time"
+
+	"./controller"
+	"./model"
 )
 
 //index函数用来返回主页面
 func index(w http.ResponseWriter, r *http.Request) {
-	buf, err := ioutil.ReadFile("views/index.html")
-	if err != nil {
-		panic(err)
+	t := template.Must(template.ParseFiles("./views/index.html"))
+	t.Execute(w, model.CheckLogin(w, r))
+}
+
+func ScanNotes() {
+	for {
+		startTime := time.Now()
+		model.ScanAllNotesToMysql("./views/pages/notes")
+		fmt.Printf("%s:更新笔记完成,用时[%s]\n", startTime.Format("2006-01-02 15:04:05"), time.Since(startTime))
+		time.Sleep(time.Minute * 1)
 	}
-	w.Write(buf)
 }
 
 func main() {
+	go ScanNotes()
+	//静态文件系统
 	http.Handle("/pages/", http.StripPrefix("/pages/", http.FileServer(http.Dir("views/pages/"))))
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("views/static/"))))
 	http.Handle("/notes/", http.StripPrefix("/notes/", http.FileServer(http.Dir("views/notes/"))))
-	http.HandleFunc("/index", index)
-	http.HandleFunc("/login", controller.Login)
-	http.HandleFunc("/register", controller.Register)
+	//
+	http.HandleFunc("/index", index)                          //主页
+	http.HandleFunc("/login", controller.Login)               //登陆
+	http.HandleFunc("/register", controller.Register)         //注册
+	http.HandleFunc("/mypage", controller.Mypage)             //我的主页
+	http.HandleFunc("/unlogin", controller.Unlogin)           //退出登陆
+	http.HandleFunc("/expassistant", controller.Expassistant) //实验助手
+	//Ajax用的请求
 	http.HandleFunc("/checkUsername", controller.CheckUsername)
 	http.HandleFunc("/checkPassword", controller.CheckPassword)
 	http.HandleFunc("/checkEmail", controller.CheckEmail)
-	http.HandleFunc("/mynotes", controller.MyNotes)
+
+	http.HandleFunc("/cal_iqy_input_post", controller.CalIqyInput)
+	//
+	http.HandleFunc("/mynotes", controller.MyNotes) //我的笔记页面
 	fmt.Println("Ip:0.0.0.0\nPort:8080")
 	http.ListenAndServe(":8080", nil)
+
 }
