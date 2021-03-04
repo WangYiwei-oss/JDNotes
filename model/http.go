@@ -20,7 +20,7 @@ func WriteTemplate(w http.ResponseWriter, path string, data interface{}) {
 	t.Execute(w, data)
 }
 
-func CheckLogin(w http.ResponseWriter, r *http.Request) bool {
+func CheckLogin(r *http.Request) bool {
 	cookie, err := r.Cookie("_cookie")
 	if err == nil {
 		u := User{Username: cookie.Value}

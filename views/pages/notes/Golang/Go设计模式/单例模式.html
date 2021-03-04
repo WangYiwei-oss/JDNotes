@@ -1,0 +1,142 @@
+<!-->Golang<-->
+<!-->Go设计模式<-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>单例模式</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<p>单例模式的意思就是某一个对象，是全世界唯一的。我可以去访问它操作它。但我操作的一定是这个对象的引用。所以任何的改变还是在改变那一个对象</p>
+	<p>实现起来也很简单，关键点一个是必须只初始化一次。要提供一个方法去拿到对象的引用。对象的方法必须都是线程安全的</p>
+	<p>来看一下代码：
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "sync"
+)
+
+type people struct {
+        age int
+        mux sync.Mutex
+}
+
+var p *people
+
+func GetPeopleInstance() *people {
+        if p == nil {
+                p = &amppeople{}
+                return p
+        } else {
+                return p
+        }
+}
+
+//这里的更改操作必须加锁保证线程安全
+func (p *people) IncreaseAge() {
+        p.mux.Lock()
+        defer p.mux.Unlock()
+        p.age++
+}
+func (p *people) GetAge() int {
+        return p.age
+}
+func main() {
+        wg := sync.WaitGroup{}
+        wg.Add(30000)
+        for i := 0; i &lt 10000; i++ {
+                go func() {
+                        defer wg.Done()
+                        p1 := GetPeopleInstance()
+                        p1.IncreaseAge()
+                }()
+                go func() {
+                        defer wg.Done()
+                        p2 := GetPeopleInstance()
+                        p2.IncreaseAge()
+                }()
+                go func() {
+                        defer wg.Done()
+                        p3 := GetPeopleInstance()
+                        p3.IncreaseAge()
+                }()
+        }
+        wg.Wait()
+        p4 := GetPeopleInstance()
+        fmt.Println(p4.age)
+}
+运行结果为30000
+</pre>
+	</p>
+	<p>可以看到people的引用其实被30001个人取得了。但是还是协调工作的很好。并且取得的都是那一个people。只初始化一次是通过判断*p是否为nil来保证的</p>
+	<p>还有第二种方法，使用sync.Once来保证只初始化一次的:
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "sync"
+)
+
+var (
+        p    *people
+        once sync.Once
+)
+
+func init() {
+        once.Do(func() {
+                p = &amppeople{}
+        })
+}
+
+type people struct {
+        age int
+        mux sync.Mutex
+}
+
+func GetPeopleInstance() *people {
+        return p
+}
+
+//这里的更改操作必须加锁保证线程安全
+func (p *people) IncreaseAge() {
+        p.mux.Lock()
+        defer p.mux.Unlock()
+        p.age++
+}
+func (p *people) GetAge() int {
+        return p.age
+}
+func main() {
+        wg := sync.WaitGroup{}
+        wg.Add(30000)
+        for i := 0; i &lt 10000; i++ {
+                go func() {
+                        defer wg.Done()
+                        p1 := GetPeopleInstance()
+                        p1.IncreaseAge()
+                }()
+                go func() {
+                        defer wg.Done()
+                        p2 := GetPeopleInstance()
+                        p2.IncreaseAge()
+                }()
+                go func() {
+                        defer wg.Done()
+                        p3 := GetPeopleInstance()
+                        p3.IncreaseAge()
+                }()
+        }
+        wg.Wait()
+        p4 := GetPeopleInstance()
+        fmt.Println(p4.age)
+}
+运行结果：
+30000
+</pre>
+	</p>
+	<p>同样可以成功</p>
+</body>
+</html>

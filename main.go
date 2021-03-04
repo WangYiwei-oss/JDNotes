@@ -13,7 +13,7 @@ import (
 //index函数用来返回主页面
 func index(w http.ResponseWriter, r *http.Request) {
 	t := template.Must(template.ParseFiles("./views/index.html"))
-	t.Execute(w, model.CheckLogin(w, r))
+	t.Execute(w, model.CheckLogin(r))
 }
 
 func ScanNotes() {
@@ -33,7 +33,9 @@ func main() {
 	http.Handle("/notes/", http.StripPrefix("/notes/", http.FileServer(http.Dir("views/notes/"))))
 	//
 	http.HandleFunc("/index", index)                          //主页
+	http.HandleFunc("/tologin", controller.ToLogin)           //登陆页面
 	http.HandleFunc("/login", controller.Login)               //登陆
+	http.HandleFunc("/toregister", controller.ToRegister)     //注册页面
 	http.HandleFunc("/register", controller.Register)         //注册
 	http.HandleFunc("/mypage", controller.Mypage)             //我的主页
 	http.HandleFunc("/unlogin", controller.Unlogin)           //退出登陆
@@ -44,6 +46,7 @@ func main() {
 	http.HandleFunc("/checkEmail", controller.CheckEmail)
 
 	http.HandleFunc("/cal_iqy_input_post", controller.CalIqyInput)
+	http.HandleFunc("/cal_integral", controller.CalIntegral)
 	//
 	http.HandleFunc("/mynotes", controller.MyNotes) //我的笔记页面
 	fmt.Println("Ip:0.0.0.0\nPort:8080")

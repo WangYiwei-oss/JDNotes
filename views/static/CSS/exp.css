@@ -1,20 +1,9 @@
-#directory{
-        height:35px;
-        width:100%;
-        background-color:#669999;
-        box-shadow:0px 7px 3px -3px #CCC;
-        padding-left:20px;
-}
-#directory>a{
-        line-height:35px;
-        font-size:1.1rem;
-        margin-left:10px;
-        margin-right:10px;
-}
-#content{
+#contentexp{
 	float:left;
-	margin:10px;
-	padding:5px;
+	margin:20px;
+}
+#guide{
+	width:0px;
 }
 #b1{
 	margin:10px;
@@ -31,6 +20,17 @@
 	overflow:visible;
 	font-size:1.2rem;
 }
-#btn{
+#result{
 	margin:10px;
+        width:50%;
+        height:20rem;
+        overflow:visible;
+        font-size:1.2rem;
+	display:none;
+}
+button{
+	margin:10px;
+}
+#btn_save{
+	display:none;
 }

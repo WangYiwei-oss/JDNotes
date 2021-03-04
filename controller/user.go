@@ -6,6 +6,9 @@ import (
 	"../model"
 )
 
+func ToLogin(w http.ResponseWriter, r *http.Request) {
+	model.WriteHTML(w, "views/pages/user/login.html")
+}
 func Login(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	user := &model.User{}
@@ -27,7 +30,9 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		model.WriteTemplate(w, "views/pages/user/login.html", "用户名或密码错误")
 	}
 }
-
+func ToRegister(w http.ResponseWriter, r *http.Request) {
+	model.WriteHTML(w, "views/pages/user/register.html")
+}
 func Register(w http.ResponseWriter, r *http.Request) {
 	user := &model.User{}
 	user.Username = r.PostFormValue("username")
@@ -58,7 +63,14 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 	user.Number = r.PostFormValue("number")
 	user.InsertIntoSql()
-	model.WriteTemplate(w, "views/pages/user/register_success.html", user.Username)
+	cookie := http.Cookie{
+		Name:     "_cookie",
+		Value:    user.Username,
+		HttpOnly: true,
+		MaxAge:   3600,
+	}
+	http.SetCookie(w, &cookie)
+	http.Redirect(w, r, "/index", 302)
 }
 
 func CheckUsername(w http.ResponseWriter, r *http.Request) {

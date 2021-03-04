@@ -7,6 +7,7 @@
 	<link rel="stylesheet" href="../static/CSS/mynotes.css">
 	<link rel="stylesheet" href="../static/CSS/notes.css">
 	<script src="static/JS/jquery-1.10.2.js"></script>
+	<script src="static/JS/jquery.cookie.js"></script>
 	<script>
 		$(function(){
 			{{range $key,$value:=.titles}}
@@ -21,26 +22,48 @@
 				}
 			});
 			{{end}}
+			if($.cookie('protectcolor')=='1'){
+				$('#protectcolor').attr("checked",true);
+				$('#lower').css('background-color','#CCE8CF')
+			}else{
+				$('#protectcolor').attr("checked",false);
+				$('#lower').css('background-color','white')
+			}
+			$('#protectcolor').click(function(){
+				if($('#protectcolor').is(':checked')){
+					$('#lower').css('background-color','#CCE8CF')
+					$.cookie('protectcolor','1',{expires:7})
+				}else{
+					$('#lower').css('background-color','white')
+					$.cookie('protectcolor','0',{expires:7})
+				}
+			});
 		});
 	</script>
 </head>
 <body>
 	<div id="header">
-        <a id="mainlogo" href="/index">主LOGO</a>
+	<a id="mainlogo" href="/index"><img src="static/logo/main.png" alt="返回主页面"></a>
         <a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
         <a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
         <a class="label1" href="/mynotes">我的笔记</a>
         <a class="label1" href="/expassistant">实验助手</a>
-        <a class="label2" href="pages/user//register">注册</a>
-        <a class="label2" href="pages/user//login">登陆</a>
+        <input id="protectcolor" type="checkbox">
+	<label for="protectcolor"></label>
+	{{if .login}}
+	<a class="label2" href="/mypage">我的主页</a>
+	{{else}}
+        <a class="label2" href="/toregister">注册</a>
+        <a class="label2" href="/tologin">登陆</a>
+	{{end}}
         </div>
-        <div id="welcome"></div>
-	
+        <div id="welcome"><img src="/static/logo/welcom.jpg"></div>
 	<div id="directory">
 		{{range .firstclass}}
 		<a href="/mynotes?firstclass={{.}}">{{.}}</a>
 		{{end}}
 	</div>
+	<div id=lower>
 	<div style="height:100%;width:100%">
 		<div id=guide>
 		{{range $key,$value:=.titles}}
@@ -73,6 +96,7 @@
 		<div id="content">
 			{{.text}}
 		</div>
+	</div>
 	</div>
 </body>
 </html>

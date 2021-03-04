@@ -10,6 +10,7 @@ func MyNotes(w http.ResponseWriter, r *http.Request) {
 	//处理导航栏
 	firstcs := model.GetAllFirstclass()
 	arg := make(map[string]interface{})
+	arg["login"] = model.CheckLogin(r)
 	arg["firstclass"] = firstcs
 	//处理导航栏跳转
 	firstclass := r.FormValue("firstclass")

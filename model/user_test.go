@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -17,6 +16,7 @@ func Test(t *testing.T) {
 	//ScanAllNotesToMysql("/home/wangyiwei/JDNotes/views/pages/notes")
 	//GetAllNotes()
 	//GetAllFirstclass()
-	a := SelectByFirstClass("Golang")
-	fmt.Println(a)
+	//a := SelectByFirstClass("Golang")
+	//fmt.Println(a)
+	CleanStaticFiles()
 }
