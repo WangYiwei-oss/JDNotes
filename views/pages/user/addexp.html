@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>添加实验助手</title>
+	<link rel="stylesheet" href="/static/CSS/header.css">
+	<link rel="stylesheet" href="/static/CSS/addexp.css">
+        <script src="/static/JS/jquery-1.10.2.js"></script>
+	<script>
+	var parmcount=1;
+	var rescount=1;
+	var funccount=1;
+	function drop(opp){
+		$(opp).parent().parent().remove();
+	}
+	$(function(){
+		$('#neijianparm>#tbody1>.alonTr>.parminfo>input').attr('value',"参数1");
+		$('#showhelp').click(function(){
+                	help=$('#help')
+                	if(help.css('display')=='none'){
+                        	help.css('display','inline-block');
+			}else{
+				help.css('display','none');
+			}
+        	});
+		$("#addparm").click(function(){
+			newnode=$("#neijianparm>#tbody1>.alonTr").clone();
+			parmcount++;
+			$(newnode.children()[0]).find("input").attr('value','参数'+parmcount);
+			$(newnode.children()[2]).css('display','inline-block')
+			newnode.appendTo($("#neijianparm>.tbody2"));
+		});
+		$("#addres").click(function(){
+                        newnode=$("#neijianres>#tbody1>.alonTr").clone();
+			rescount++;
+                        $(newnode.children()[0]).html('结果'+rescount);
+                        $(newnode.children()[2]).css('display','inline-block')
+                        newnode.appendTo($("#neijianres>.tbody2"));
+                });
+		$("#addfunc").click(function(){
+                        newnode=$("#neijianfunc>#tbody1>.alonTr").clone();
+                        funccount++;
+                        $(newnode.children()[0]).html('方程'+funccount);
+                        $(newnode.children()[2]).css('display','inline-block')
+                        newnode.appendTo($("#neijianfunc>.tbody2"));
+                });
+		$('#submit').click(function(){
+			var parmarray=new Array();
+			var parmnamearray=new Array();
+			var resarray=new Array();
+			var funcarray=new Array();
+			for(var i=0;i<$('#neijianparm>tbody>tr>.parm').children().length;i++){
+				parmarray.push($($('#neijianparm>tbody>tr>.parm').children()[i]).val())
+			}
+			for(var i=0;i<$('#neijianparm>tbody>tr>.parminfo').children().length;i++){
+                                parmnamearray.push($($('#neijianparm>tbody>tr>.parminfo').children()[i]).val())
+                        }
+			for(var i=0;i<$('#neijianres>tbody>tr>.parm').children().length;i++){
+                                resarray.push($($('#neijianres>tbody>tr>.parm').children()[i]).val())
+                        }
+			for(var i=0;i<$('#neijianfunc>tbody>tr>.parm').children().length;i++){
+                                funcarray.push($($('#neijianfunc>tbody>tr>.parm').children()[i]).val())
+                        }
+			var args={'parms':JSON.stringify(parmarray),'ress':JSON.stringify(resarray),'funcs':JSON.stringify(funcarray),'output':$('#output').val(),'title':$('#title').val(),'parmname':JSON.stringify(parmnamearray)};
+			$.ajax({
+				url:"/adduserexp",
+				type:'POST',
+				//contentType : "application/json" ,
+				data:args,
+				success:function(res){
+					alert(res);
+				}
+			});
+		});
+	});
+	</script>
+</head>
+<body>
+	<div id="header">
+        <a id="mainlogo" href="/index"><img src="static/logo/main.png" alt="返>回主页面"></a>
+        <a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
+        <a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
+        <a class="label1" href="/mynotes">我的笔记</a>
+        <a class="label1" href="/expassistant">实验助手</a>
+        <a class="label2" href="/mypage">我的主页</a>
+        </div>
+        <div id="welcome"><img src="/static/logo/welcom.jpg"></div>
+	<div id="exparea">
+	<button id='showhelp'>查看帮助&gt</button><br/>
+	<div id="help"><p>帮助:<br/>功能为用参数进行运算得到结果，并生成最终输出。<br/><font style="font-weight:bold">参数为英文字母<br/><br/>结果为英文字母<br/>比如z<br/>方程的格式为:结果=参数+运算符<br/><br/>输出为最终得到的段落，段落中需要用参数或者结果代替的要用{{}}包裹<br/></font><font style="color:red">注意:<br/>所有的参数都必须出现在方程或者输出中<br/>所有结果都必须出现在方程中<br/>运算符仅支持=+-*/()<br/>不能出现负数，如果有负数请用(0-x)的形式来表示</font><br/>比如:</p>
+	<img src="static/img/helpexample.png">
+	</div>
+	<label for="title">标题</label>
+	<input id="title" type="text">
+	<table id="neijianparm">
+		<tbody id="tbody1">
+		<tr class="alonTr">
+			<td class="parminfo"><input type="text"></td>
+			<td class="parm"><input type="text"></td>
+			<td style="display:none"><button class="remove" onclick="drop(this)">删除</button></td>
+		</tr>
+		</tbody>
+		<tbody class='tbody2'></tbody>
+	</table>
+	<button id="addparm">+</button>
+        <table id="neijianres">
+                <tbody id="tbody1">
+                <tr class="alonTr">
+                        <td class="parminfo">结果1</td>
+                        <td class="parm"><input type="text"></td>
+                        <td style="display:none"><button class="remove" onclick="drop(this)">删除</button></td>
+                </tr>
+                </tbody>
+                <tbody class='tbody2'></tbody>
+        </table>
+	<button id="addres">+</button>
+	<table id="neijianfunc">
+                <tbody id="tbody1">
+                <tr class="alonTr">
+                        <td class="parminfo">方程1</td>
+                        <td class="parm"><input type="text"></td>
+                        <td style="display:none"><button class="remove" onclick="drop(this)">删除</button></td>
+                </tr>
+                </tbody>
+                <tbody class='tbody2'></tbody>
+        </table>
+	<button id="addfunc">+</button><br/>
+	<p>输出:</p>
+	<textarea id="output"></textarea><br/>
+	<button id="submit">提交</button>
+	</div>
+</body>
+</html>

@@ -4,15 +4,32 @@
 	<meta charset="UTF-8">
 	<title>我的主页</title>
 	<link rel="stylesheet" href="/static/CSS/header.css">
+	<link rel="stylesheet" href="/static/CSS/mypage.css">
 </head>
 <body>
 	<div id="header">
 		<a id="mainlogo" href="/index"><img src="static/logo/main.png" alt="返回主页面"></a>
         	<a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
         	<a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
-        	<a class="label2" href="/pages/user/register.html">注册</a>
+	<a class="label1" href="/mynotes">我的笔记</a>
+        <a class="label1" href="/expassistant">实验助手</a>
         </div>
 	<div id="welcome"><img src="/static/logo/welcom.jpg"></div>
-	<a href="/unlogin">退出登陆</a>
+	<div class="split"></div>
+	<div id="option">
+	<label for="myexps"><img src="static/logo/myexp.png"></label>
+	<a href="/mypage_myexps" id="myexps">我的实验助手</a><br/>
+	<label for="mynotes"><img src="static/logo/myfile.png"></label>
+	<a href="/mypage_mynotes" id="mynotes">我的笔记</a><br/>
+	<div class="split"></div>
+	<label for="addexp"><img src="static/logo/addexp.png"></label>
+	<a href="/addexp" id="addexp">添加实验助手</a><br/>
+	<label for="addnote"><img src="static/logo/addnote.png"></label>
+	<a href="/addnote" id="addnote">添加笔记</a><br/>
+	<div class="split"></div>
+	<label for="quit"><img src="static/logo/quit.png"></label>
+	<a href="/unlogin" id="quit">退出登陆</a>
+	</div>
+	<div class="split"></div>
 </body>
 </html>

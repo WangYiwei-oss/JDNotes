@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"../model"
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,18 +11,52 @@ import (
 	stlpath "path"
 	"strconv"
 	"strings"
+
+	"../model"
+	"../utils"
 )
 
 func Expassistant(w http.ResponseWriter, r *http.Request) {
 	t := r.FormValue("funcname")
+	userfunc := model.Userfunc{}
+	id := r.FormValue("id")
+	userfunc.Title = r.FormValue("title")
 	arg := make(map[string]interface{})
 	arg["login"] = model.CheckLogin(r)
 	funcclass := model.GetAllExps()
 	arg["funcclass"] = funcclass
-	content, _ := model.RenderContentByfuncname(t)
-	arg["content"] = content
-	script, _ := model.RenderScriptByfuncname(t)
-	arg["script"] = script
+	if t != "" {
+		content, _ := model.RenderContentByfuncname(t)
+		arg["content"] = content
+		script, _ := model.RenderScriptByfuncname(t)
+		arg["script"] = script
+		arg["id"] = ""
+		arg["title"] = ""
+	}
+	if id != "" && userfunc.Title != "" {
+		userfunc.Id, _ = strconv.Atoi(id)
+		sql := "SELECT parmnames,parms,funcs,content FROM userexps WHERE id=? AND title=?"
+		rows, _ := utils.Db.Query(sql, userfunc.Id, userfunc.Title)
+		var parmnamesJSON, parmsJSON, funcsJSON, contentJSON string
+		for rows.Next() {
+			rows.Scan(&parmnamesJSON, &parmsJSON, &funcsJSON, &contentJSON)
+		}
+		dealer := model.UserExpDealer{}
+		dealer.InitUserExpDealer(parmnamesJSON, parmsJSON, funcsJSON, contentJSON)
+		content := dealer.RenderParmHtml()
+		arg["content"] = content
+		arg["script"] = ""
+		arg["id"] = id
+		arg["title"] = userfunc.Title
+	}
+	cookie, err := r.Cookie("_cookie")
+	if err == nil {
+		user := model.User{}
+		user.Username = cookie.Value
+		user.SelectByUsername()
+		userfuncs := model.GetAllUserExps()
+		arg["userfunc"] = userfuncs
+	}
 	model.WriteTemplate(w, "views/pages/expassistant.html", arg)
 }
 
@@ -107,7 +141,7 @@ func CalIntegral(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 			return
 		}
-		filename := "views/static/temp/integral" + files[i].Filename
+		filename := "views/static/temp/integral/" + files[i].Filename
 		cur, _ := os.Create(filename)
 		io.Copy(cur, file)
 		cur.Close()
@@ -119,7 +153,7 @@ func CalIntegral(w http.ResponseWriter, r *http.Request) {
 	}
 	content := "起始波长:" + startwl + "结束波长:" + endwl + "\n" + "样品 积分面积\n"
 	for _, path := range entries {
-		fi, _ := os.Open("/home/wangyiwei/JDNotes/views/static/temp/integral" + path.Name())
+		fi, _ := os.Open("/home/wangyiwei/JDNotes/views/static/temp/integral/" + path.Name())
 		br := bufio.NewReader(fi)
 		counttwo := 0
 		var tempdata1, tempdata2 [2]float64
@@ -186,4 +220,36 @@ func CalIntegral(w http.ResponseWriter, r *http.Request) {
 	defer res.Close()
 	res.Write([]byte(content))
 	w.Write([]byte(content))
+}
+
+//计算用户的输入公式
+func CalExp(w http.ResponseWriter, r *http.Request) {
+	datasJSON := r.FormValue("datas")
+	userfunc := model.Userfunc{}
+	id := r.FormValue("id")
+	userfunc.Title = r.FormValue("title")
+	datas := make([]string, 0)
+	json.Unmarshal([]byte(datasJSON), &datas)
+	var parmnamesJSON, parmsJSON, funcsJSON, contentJSON string
+	userfunc.Id, _ = strconv.Atoi(id)
+	sql := "SELECT parmnames,parms,funcs,content FROM userexps WHERE id=? AND title=?"
+	rows, _ := utils.Db.Query(sql, userfunc.Id, userfunc.Title)
+	for rows.Next() {
+		rows.Scan(&parmnamesJSON, &parmsJSON, &funcsJSON, &contentJSON)
+	}
+	dealer := model.UserExpDealer{}
+	dealer.InitUserExpDealer(parmnamesJSON, parmsJSON, funcsJSON, contentJSON)
+	for _, a := range datas {
+		if a == "" {
+			w.Write([]byte("数据不能为空"))
+			return
+		}
+	}
+	dealer.WriteDatas(datasJSON)
+	cal := model.NewCalculator()
+	fps := dealer.GetFuncs()
+	for _, fp := range fps {
+		cal.CalculateFunc(fp.GetResult(), fp.GetParms(), dealer.GetDatas())
+	}
+	w.Write(dealer.RenderOutput())
 }

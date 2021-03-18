@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="UTF-8">
+        <title>修改</title>
+        <link rel="stylesheet" href="/static/CSS/header.css">
+	<link rel="stylesheet" href="/static/CSS/addnote.css">
+        <script src="/static/JS/jquery-1.10.2.js"></script>
+	<script>
+		$(function(){
+			$.post("/getnote?id={{.id}}&title={{.title}}","",function(res){
+				var js=eval("("+res+")");
+				$('#title').val(js.Title);
+				$('#firstclass').val(js.Firstclass);
+				$('#secondclass').val(js.Secondclass);
+			});
+			$('#submit').click(function(){
+				var parm={'id':{{.id}},'oldtitle':"{{.title}}",'firstclass':$('#firstclass').val(),'secondclass':$('#secondclass').val(),"title":$('#title').val(),"content":$('#content').val()};
+				$.post('/alterusernote',parm,function(res){
+					alert(res)
+				});
+			});
+		});
+	</script>
+</head>
+<body>
+<div id="header">
+        <a id="mainlogo" href="/index"><img src="static/logo/main.png" alt="返>回主页面"></a>
+        <a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
+        <a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
+        <a class="label1" href="/mynotes">我的笔记</a>
+        <a class="label1" href="/expassistant">实验助手</a>
+        <a class="label2" href="/mypage">我的主页</a>
+        </div>
+        <div id="welcome"><img src="/static/logo/welcom.jpg"></div>
+	<div id="lower">
+		<div id="inputarea">
+		<label for="firstclass">一级分类：</label>
+		<input type="text" id="firstclass"><br/>
+		<label for="secondclass">二级分类：</label>
+		<input type="text" id="secondclass"><br/>
+		<label for="title">标题：</label>
+		<input type="text" id="title" style="margin-left:2rem"><br/>
+		<textarea id="content">{{.content}}</textarea>
+		<button id="submit">修改</button>
+		</div>
+	</div>
+</div>
+</body>

@@ -27,6 +27,29 @@
                                         $.cookie('protectcolor','0',{expires:7})
                                 }
                         });
+			$('#submit').click(function(){
+				var dataArray=new Array();
+				for(var i=0;i<$('.parms').length;i++){
+					dataArray.push($('.parms')[i].value)
+				}
+				var arg={'datas':JSON.stringify(dataArray)};
+				$.ajax({
+					url:"/calexp?id={{.id}}&title={{.title}}",
+					type:'POST',
+					data:arg,
+					success:function(res){
+						$('#result').css('display','block');
+						$('#result').text(res)
+					}
+				});
+			});
+			$('#showinfo').click(function(){
+				if($('#info').css("display")=="none"){
+					$('#info').css("display","inline")
+				}else{
+					$('#info').css("display","none")
+				}
+			});
 		});
 	</script>
 </head>
@@ -51,11 +74,14 @@
 		{{range .funcclass}}
 		<a href="/expassistant?funcname={{.Funcname}}">{{.Title}}</a>
 		{{end}}
+		{{range .userfunc}}
+		<a href="/expassistant?id={{.Id}}&title={{.Title}}">{{.Title}}</a>
+		{{end}}
         </div>
 	<div id="lower">
 	<div id="contentexp">
 	{{.content}}
-	<p id="result"></p>
+	<textarea id="result"></textarea><br/>
 	</div>
 	</div>
 </body>

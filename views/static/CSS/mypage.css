@@ -1,0 +1,30 @@
+#option{
+	margin-left:30%;
+	margin-right:30%;
+	width:40%;
+	padding:5px;
+}
+#option>a{
+	display:inline-block;
+	font-size:1.2rem;
+	margin-left:1rem;
+}
+#option>label{
+	display:inline-block;
+	position:relative;
+	top:2px;
+}
+#option>label>img{
+	display:inline-block;
+	width:1.2rem;
+	height:1.2rem;
+}
+.split{
+	height:1px;
+	background-color:grey;
+	width:100%;
+	display:block;
+	padding:0px;
+	margin-top:10px;
+	margin-bottom:10px;
+}

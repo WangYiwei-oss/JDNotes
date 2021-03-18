@@ -8,7 +8,7 @@ import (
 
 func MyNotes(w http.ResponseWriter, r *http.Request) {
 	//处理导航栏
-	firstcs := model.GetAllFirstclass()
+	firstcs := model.GetAllFirstclassWithCookie(r)
 	arg := make(map[string]interface{})
 	arg["login"] = model.CheckLogin(r)
 	arg["firstclass"] = firstcs

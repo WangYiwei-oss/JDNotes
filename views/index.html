@@ -13,7 +13,7 @@
         <a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
 	<a class="label1" href="/mynotes">我的笔记</a>
 	<a class="label1" href="/expassistant">实验助手</a>
-	{{if .}}
+	{{if .login}}
 	<a class="label2" href="/mypage">我的主页</a>
 	{{else}}
 	<a class="label2" href="/toregister">注册</a>
@@ -23,6 +23,6 @@
         <div id="welcome">
 	<img src="/static/logo/welcom.jpg">
 	</div>
-	<h1 style="text-align:center">欢迎使用JDNotes</h1>
+	<h1 style="text-align:center">欢迎<font style="color:red">{{.username}}</font>使用JDNotes</h1>
 </body>
 </html>

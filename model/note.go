@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"../utils"
@@ -18,7 +20,15 @@ type Note struct {
 	Filepath    string
 	Firstclass  string
 	Secondclass string
-	Thirdclass  string
+}
+
+//将笔记信息插入mysql
+func (n *Note) InsertIntoMysql() {
+	if n.Secondclass == "" {
+		utils.Db.Exec("INSERT INTO notes(id,title,filepath,firstclass,secondclass) VALUES(?,?,?,?,?)", n.Id, n.Title, n.Filepath, n.Firstclass, "其他")
+	} else {
+		utils.Db.Exec("INSERT INTO notes(id,title,filepath,firstclass,secondclass) VALUES(?,?,?,?,?)", n.Id, n.Title, n.Filepath, n.Firstclass, n.Secondclass)
+	}
 }
 
 //返回dir目录下所有的文件信息
@@ -30,7 +40,7 @@ func dirents(dir string) []os.FileInfo {
 	return entries
 }
 
-//返回dir文件的一级二级三级分类
+//返回dir文件的一级\二级\用户ID
 func getClass(dir string) (res [3]string) {
 	file, err := os.Open(dir)
 	if err != nil {
@@ -40,11 +50,11 @@ func getClass(dir string) (res [3]string) {
 	count := 0
 	for {
 		line, err := rd.ReadString('\n')
-		if err != nil || io.EOF == err || count > 2 {
+		if err != nil || io.EOF == err || count > 3 {
 			break
 		} else {
-			if strings.HasPrefix(line, "<!-->") {
-				res[count] = line[5 : len(line)-5]
+			if strings.HasPrefix(line, "<!--") {
+				res[count] = line[4 : len(line)-4]
 			}
 			count++
 		}
@@ -60,7 +70,6 @@ func walkDir(dir string, ns *[]Note) {
 			walkDir(subdir, ns)
 		} else {
 			note := Note{}
-			note.Id = 1
 			note.Title = strings.TrimSuffix(path.Name(), ".html")
 			note.Filepath = filepath.Join(dir, path.Name())
 			class := getClass(note.Filepath)
@@ -70,7 +79,7 @@ func walkDir(dir string, ns *[]Note) {
 				note.Firstclass = class[0]
 			}
 			note.Secondclass = class[1]
-			note.Thirdclass = class[2]
+			note.Id, _ = strconv.Atoi(class[2])
 			*ns = append(*ns, note)
 		}
 	}
@@ -85,15 +94,15 @@ func ScanAllNotes(dir string) *[]Note {
 
 //将dir下的所有的文件信息写入mysql
 func ScanAllNotesToMysql(dir string) {
-	utils.Db.Exec("DELETE FROM notes")
 	ns := ScanAllNotes(dir)
 	for _, n := range *ns {
-		utils.Db.Exec("INSERT INTO notes(id,title,filepath,firstclass,secondclass,thirdclass)VALUES(?,?,?,?,?,?)", n.Id, n.Title, n.Filepath, n.Firstclass, n.Secondclass, n.Thirdclass)
+		utils.Db.Exec("INSERT INTO notes(id,title,filepath,firstclass,Secondclass)VALUES(?,?,?,?,?)", n.Id, n.Title, n.Filepath, n.Firstclass, n.Secondclass)
 	}
 }
 
 //获取笔记的类型，用于填充导航栏
 func GetAllFirstclass() *[]string {
+
 	sql := "SELECT firstclass FROM notes GROUP BY firstclass"
 	rows, _ := utils.Db.Query(sql)
 	ss := make([]string, 1)
@@ -104,10 +113,36 @@ func GetAllFirstclass() *[]string {
 	}
 	return &ss
 }
+func GetAllFirstclassWithCookie(r *http.Request) *[]string {
+	cookie, err := r.Cookie("_cookie")
+	ss := make([]string, 1)
+	if err != nil {
+		sql := "SELECT firstclass FROM notes WHERE id=1 GROUP BY firstclass"
+		rows, _ := utils.Db.Query(sql)
+		for rows.Next() {
+			var class string
+			rows.Scan(&class)
+			ss = append(ss, class)
+		}
+		return &ss
+	} else {
+		user := User{}
+		user.Username = cookie.Value
+		user.SelectByUsername()
+		sql := "SELECT firstclass FROM notes WHERE id=1 OR id=? GROUP BY firstclass"
+		rows, _ := utils.Db.Query(sql, user.Id)
+		for rows.Next() {
+			var class string
+			rows.Scan(&class)
+			ss = append(ss, class)
+		}
+		return &ss
+	}
+}
 
 //获取所有笔记的所有信息
 func GetAllNotes() *[]Note {
-	sql := "SELECT id,title,filepath,firstclass,secondclass,thirdclass FROM notes"
+	sql := "SELECT id,title,filepath,firstclass,secondclass FROM notes"
 	rows, err := utils.Db.Query(sql)
 	if err != nil {
 		return nil
@@ -115,7 +150,7 @@ func GetAllNotes() *[]Note {
 	var ns []Note
 	for rows.Next() {
 		var n Note
-		rows.Scan(&n.Id, &n.Title, &n.Filepath, &n.Firstclass, &n.Secondclass, &n.Thirdclass)
+		rows.Scan(&n.Id, &n.Title, &n.Filepath, &n.Firstclass, &n.Secondclass)
 		ns = append(ns, n)
 	}
 	return &ns
@@ -123,12 +158,12 @@ func GetAllNotes() *[]Note {
 
 //获取一级分类下所有的笔记标题信息
 func SelectByFirstClass(firstclass string) *map[string][]Note {
-	sql := "SELECT title,firstclass,secondclass,thirdclass FROM notes WHERE firstclass=?"
+	sql := "SELECT title,firstclass,secondclass FROM notes WHERE firstclass=?"
 	rows, _ := utils.Db.Query(sql, firstclass)
 	group_ns := make(map[string][]Note)
 	for rows.Next() {
 		var n Note
-		rows.Scan(&n.Title, &n.Firstclass, &n.Secondclass, &n.Thirdclass)
+		rows.Scan(&n.Title, &n.Firstclass, &n.Secondclass)
 		group_ns[n.Secondclass] = append(group_ns[n.Secondclass], n)
 	}
 	return &group_ns
@@ -147,4 +182,34 @@ func OpenByTitle(title string) (buf []byte) {
 		return nil
 	}
 	return
+}
+
+//根据Id和Title查找笔记
+func (n *Note) SelectNoteByIdAndTitle() {
+	sql := "SELECT filepath,firstclass,secondclass FROM notes WHERE id=? AND title=?"
+	row := utils.Db.QueryRow(sql, n.Id, n.Title)
+	row.Scan(&n.Filepath, &n.Firstclass, &n.Secondclass)
+}
+
+//根据Id和Title删除笔记
+func (n *Note) DeleteNoteByIdAndTitle() {
+	n.SelectNoteByIdAndTitle()
+	os.Remove("/home/wangyiwei/JDNotes/" + n.Filepath)
+	sql := "DELETE FROM notes WHERE id=? AND title=?"
+	utils.Db.Exec(sql, n.Id, n.Title)
+}
+
+//parse文件格式
+func ParseUsernote(f *os.File) string {
+	scanner := bufio.NewScanner(f)
+	scanner.Scan()
+	scanner.Scan()
+	scanner.Scan()
+	var res string
+	for scanner.Scan() {
+		res += scanner.Text() + "\n"
+	}
+	res = strings.TrimPrefix(res, "<pre>")
+	res = strings.TrimSuffix(res, "</pre>\n")
+	return res
 }

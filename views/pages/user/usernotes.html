@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>我的笔记</title>
+        <link rel="stylesheet" href="/static/CSS/header.css">
+        <link rel="stylesheet" href="/static/CSS/usernotes.css">
+        <script src="/static/JS/jquery-1.10.2.js"></script>
+</head>
+<body>
+	<div id="header">
+        <a id="mainlogo" href="/index"><img src="static/logo/main.png" alt="返>回主页面"></a>
+        <a class="label1" href="https://space.bilibili.com/15650467">bilibili</a>
+        <a class="label1" href="https://github.com/WangYiwei-oss/JDNotes">github</a>
+        <a class="label1" href="/mynotes">我的笔记</a>
+        <a class="label1" href="/expassistant">实验助手</a>
+        <a class="label2" href="/addnote">添加笔记</a>
+	<a class="label2" href="/mypage">我的主页</a>
+        </div>
+        <div id="welcome"><img src="/static/logo/welcom.jpg"></div>
+	<div id=low>
+	<div id="usernotes">
+	{{range .notes}}
+	<div class="usernote">
+	<div class="split"></div>
+	<a href="/alternote?title={{.Title}}&id={{.Id}}" class="title">{{.Title}}</a><br/>
+	<a href="/deletenote?title={{.Title}}&id={{.Id}}" onclick="return confirm('确定删除？')" class="delete">删除</a>
+	</div>
+	{{end}}
+	</div>
+	</div>
+</body>
+</html>

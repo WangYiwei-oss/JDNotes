@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -18,5 +19,16 @@ func Test(t *testing.T) {
 	//GetAllFirstclass()
 	//a := SelectByFirstClass("Golang")
 	//fmt.Println(a)
-	CleanStaticFiles()
+	//CleanStaticFiles()
+	cal := NewCalculator()
+	a := []string{"(", "a", "*", "(", "b", "-", "c", ")", ")", "+", "(", "d", ")"}
+	datas := make(map[string]float64)
+	datas["a"] = 1.2
+	datas["b"] = 2.3
+	datas["c"] = 3.4
+	datas["d"] = 2
+	cal.CalculateFunc("x", a, datas)
+	b := []string{"x", "*", "(", "a", "+", "b", ")"}
+	cal.CalculateFunc("y", b, datas)
+	fmt.Println(datas)
 }

@@ -1,0 +1,71 @@
+#exparea{
+	height:100%;
+	width:70%;
+	background-color:rgba(100,100,100,0.2);
+	margin-left:15%;
+	padding:15px;
+}
+#showhelp{
+	background-color:rgba(0,0,0,0);
+	border-style:none;
+	margin:5px 5px 10px 5px;
+	padding:0px;
+}
+#showhelp:hover{
+	color:blue;
+	cursor:pointer;
+}
+#help{
+	position:absolute;
+	left:60%;
+	top:10%;
+	height:auto;
+	width:40%;
+	background-color:white;
+	padding:5px;
+	border-radius:5px;
+	display:none;
+}
+#help>p{
+	margin:0px;
+}
+#help>img{
+	width:100%;
+}
+#addfunc,#addparm,#addres{
+	background-color:grey;
+	width:1.5rem;
+	height:1.5rem;
+	border-radius:50%;
+	border-style:none;
+	font-weight:bold;
+	vertical-align:middle;
+    	text-align: center;
+	line-height:1.5rem;
+	margin:5px 0px 2px 5px;
+}
+table{
+	margin:5px;
+}
+.parm>input{
+	width:15rem;
+	border-radius:5px;
+	height:2rem;
+	font-size:1.2rem;
+	border-style:none;
+}
+#output{
+	margin:5px;
+	border-radius:5px;
+        height:30%;
+	width:70%;
+        font-size:1.2rem;
+        border-style:none;
+}
+label{
+	margin-left:5px;
+}
+#title{
+	margin-left:1rem;
+	margin-bottom:1rem;
+}
