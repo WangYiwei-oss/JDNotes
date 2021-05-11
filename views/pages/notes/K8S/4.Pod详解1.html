@@ -1,0 +1,121 @@
+<!--K8S-->
+<!--Kubernetes基础-->
+<!--1-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Pod详解1</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>.yaml</h1>
+	<p>所有的资源对象都包含两个部分，一部分是metadata，一部分时spec,红色标注为必须的属性</p>
+	<pre class="codepre">
+<font class="red">apiVersion: v1
+kind: Pod
+metadata:
+ name: string	#资源对象的唯一名字
+ namespace: string	#名字所在的命名空间</font>
+ labels:	#可通过selector选择的labels，可定义多个
+  - name: string	#代表label的键值对，键和值都是随意的
+ annotations:	#这个才是注解
+  - name: string
+<font class="red">spec:	#Pod中容器的详细定义</font>
+	</pre>
+	<p>对于Pod来说，spec下面可以包含containers,volumes两大块和几个小的属性</p>
+	<h2>containers:</h2>
+	<pre class="codepre">
+spec:
+ containers:	#是一个数组spec.containers[]，所以里面可以放很多容器
+	</pre>
+	<p>containers里面包含描述一个容器的所有的信息,这些信息可以分为几大块</p>
+	<pre class="codepre">
+spec:
+ containers:
+ <font class="bold">#这块是一些容器的基本信息</font>
+ <font color="red">- name: string	#容器的名字
+   image: string	#容器拉取的镜像的名字</font>
+   imagePullPolicy: [Always|Never|IfNotPresent]	#镜像拉取策略
+   command: [string]	#容器的启动命令列表，如果不指定则使用镜像打包时的启动命令
+   args: [string]	#容器的启动命令参数列表
+   workingDir: string	#容器的工作目录
+   <font class="bold">#这块是容器挂载共享目录的设置，需要Pod里面有共享储存卷才行</font>
+   volumeMounts: 	#mounts means坐骑
+   - name: string	#引用Pod定义的共享储存卷的名称，需要和spec.volumes[].name保持一致
+     mountPath: string	#储存卷在容器内的绝对路径，其实就是在容器内通过这个路径就可以访问到共享储存卷
+     readOnly: boolean	#是否只读，默认为不只读
+ <font class="bold">#这块是端口以及环境变量的设置</font>
+   ports:	#容器需要暴露端口的列表，可以为多个
+   - name: string	#端口的名称
+     containerPort: int	#容器需要监听的端口号，就是容器内应用的端口号
+     hostPort: int	#容器所在主机需要监听的端口号，同一个宿主机只能设置一个hostPort，数值不同的话可以设置多个
+     protocal: string	#端口协议，支持TCP和UDP，默认TCP
+   env:		#容器运行前需要设置的环境变量列表
+   - name: string	#环境变量的名称
+     value: string	#环境变量的值
+ <font class="bold">#这块是资源限制的设置</font>
+   resources:	#资源限制和资源请求的设置
+    limits:	#限制
+     cpu: string	#限制几个cpu，单位为m，即千分之一个cpu
+     memory: string	#限制多少内存，单位为MiB，GiB
+    requests:	#资源请求
+     cpu: string	#最少要多少个cpu
+     memory: string	#最少要多少内存
+ <font class="bold">#k8s会定时对容器进行健康检查，这块是健康检查的设置</font>
+   livenessProbe:	#对容器进行健康检查，当设置的探测方法失败后，系统将重启该容器。可以设置的方法包括exec，httpGet和tcpSocket一个容器仅能设置一种检查方法
+    exec:	#设置检查方法为exec
+     command: [string]	#exec方法执行的命令或脚本
+    httpGet:	#设置检查方法为http请求，下面就是一些请求的设置
+     path: string
+     port: number
+     host: string
+     scheme: string
+     httpHeaders:
+     - name: string
+       value: string
+    tcpSocket:	#设置检查方法为tcp请求的方式
+     port: number
+    initialDelaySeconds: 0	#容器启动完成后第一次探测时间，单位s
+    timeoutSeconds: 0	#对容器健康检查的探测等待时间，默认为1s
+    periodSeconds: 0	#健康检查的时间间隔，默认为10s
+    successThreshold: 0	
+    failureThreshold: 0
+   securityContext:
+    privileged: false
+	</pre>
+	<h2>volumes</h2>
+	<pre class="codepre">
+spec:
+ volumes:
+	</pre>
+	<p>在同一个Volume中的不同的容器能够共享Pod级别的储存卷volume。volume可以被定义为各种类型，容器各自进行挂载操作</p>
+	<pre class="codepre">
+spec:
+ volumes:	#spec.volumes[]该Pod上的共享储存卷列表（可有多个）
+ - name: string	#储存卷的名字
+   emptyDir{}	#有这条代表建立一个与Pod生命周期相同的，临时的，由k8s分配名字的空目录
+   hostPath:	#有这条代表建立挂载在Pod所在宿主机的目录，其路径由path指定
+    path: string #一个宿主机的文件路径，即共享的目录
+   secret:	#有这条代表建立挂载集群预定义的secret对象到容器内部
+    secretName: string
+    items:
+    - key: string
+      path: string
+   configMap:	#有这条代表挂载集群预定义的configMap对象到容器内部
+    name: string
+    items:
+    - key: string
+      path: string
+	</pre>
+	<h2>其他</h2>
+	<pre class="codepre">
+spec:
+ restartPolicy: [Always|Never|OnFailure]	#Pod的重启策略
+ nodeSelector: object	#设置Pod将被调度到具有相同键值对label的Node上
+  -name: string		#指定selector选择的键值对，可指定多个
+ imagePullSecrets:	#pull镜像时使用的secret名称，以name: secretkey的格式指定
+ - name: string
+ hostNetwork: false 	#是否使用主机网络模式，默认为false，true为使用，那就意味着不再使用docker网桥，该Pod将无法在同一宿主机上启动第二台
+	</pre>
+</body>
+</html>

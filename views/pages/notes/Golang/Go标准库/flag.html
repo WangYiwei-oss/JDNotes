@@ -1,0 +1,242 @@
+<!--Golang-->
+<!--Go标准库-->
+<!--1-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>flag</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>flag包</h1>
+	<p>flag包实现了命令行参数的解析的功能</p>
+	<p>最简单最常用的用法为：
+<pre class="codepre">
+package main
+
+import (
+        "flag"
+        "fmt"
+)
+
+func main() {
+        a := flag.Int("a", 123, "输入一个int")
+        b := flag.String("b", "默认b", "输入一个String")
+        flag.Parse()
+        fmt.Println(*a, *b)
+}
+现在运行的话：
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=0 -b=asdasd
+0 asdasd
+</pre>
+	</p>
+	<p>可以看到已经实现了解析命令行的功能，并且分析可知有两步：
+<ol>
+	<li>注册参数，比如我注册了一个Int类型的参数，叫a，默认值为123，一个叫b的参数</li>
+	<li>调用flag.Parse()来解析</li>
+</ol>
+	</p>
+	<p>看一下为什么要这么注册，涉及到flag.flag{]结构体
+<pre class="definepre">
+type Flag struct {
+    Name     string // flag在命令行中的名字
+    Usage    string // 帮助信息
+    Value    Value  // 要设置的值
+    DefValue string // 默认值（文本格式），用于使用信息
+}
+</pre>
+	</p>
+	<p>可以看到正好对应了flag.Int("a", 123, "输入一个int")的几个参数，"a"就是Name，123就是默认值，"输入一个int"就是帮助信息，Value存的是值，是一个实现了String()和set(string)error的接口，这里可以存int和string是因为flag包给int,string实现了这两个方法，后面再详细看。</p>
+	<p>这个帮助信息有什么用呢？看下面
+<pre class="codepre">
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=0 -b=asdasd -aaslkjd
+flag provided but not defined: -aaslkjd
+Usage of /tmp/go-build995453576/b001/exe/test:
+  -a int
+    	输入一个int (default 123)
+  -b string
+    	输入一个String (default "默认b")
+exit status 2
+</pre>
+	</p>
+	<p>我胡乱输入了一个参数：-aaslkjd，那parse的时候直接解析不过报错了，默认的报错信息里面就可以见到我们设置的帮助信息，（这个报错信息可以自己改的）</p>
+	<p>还有个办法可以看到帮助信息：
+<pre class="codepre">
+在上面程序后面加上
+fmt.Println(flag.Lookup("a"))	//查看名字为a的flag
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=0 -b=asdasd
+0 asdasd
+&amp{a 输入一个int 0 123}
+可以看到确实一个flag代表一个参数
+</pre>
+	</p>
+	<p>再说一下默认的报错信息怎么改
+<pre class="codepre">
+package main
+
+import (
+        "flag"
+        "fmt"
+)
+
+func main() {
+        a := flag.Int("a", 123, "输入一个int")
+        b := flag.String("b", "默认b", "输入一个String")
+        flag.Usage = func() {
+                fmt.Println("噢no 出错了")
+        }
+        flag.Parse()
+        fmt.Println(*a, *b)
+}
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=0 -b=asdasd -casd
+flag provided but not defined: -casd
+噢no 出错了
+exit status 2
+</pre>
+	</p>
+	<p>看到设置了一下flag.Usage，就可以改报错信息</p>
+	<p>上述的解析参数的过程还可以用另一种方法：
+<pre class="codepre">
+package main
+
+import (
+        "flag"
+        "fmt"
+        "os"
+)
+
+func main() {
+        f := new(flag.FlagSet)
+        a := f.Int("a", 123, "输入一个int")
+        b := f.String("b", "默认b", "输入一个String")
+        f.Parse(os.Args[1:]) //注意这里需要手动传入要解析的[]String
+        fmt.Println(os.Args)
+        fmt.Println(*a, *b)
+}
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=0 -b=asdasd
+[/tmp/go-build651445063/b001/exe/test -a=0 -b=asdasd]
+0 asdasd
+</pre>
+	</p>
+	<p>就是自己定义一个flag.FlagSet</p>
+	<p>FlagSet是一个结构体,其实就是flag集，用来保存所有的参数：
+<pre class="definepre">
+// A FlagSet represents a set of defined flags.type FlagSet struct {    // Usage is the function called when an error occurs while parsing flags.
+    // The field is a function (not a method) that may be changed to point to
+    // a custom error handler.
+    Usage func()
+
+    name string // FlagSet的名字。CommandLine 给的是 os.Args[0]
+    parsed bool // 是否执行过Parse()
+    actual map[string]*Flag // 存放实际传递了的参数（即命令行参数）
+    formal map[string]*Flag // 存放所有已定义命令行参数
+    args []string // arguments after flags // 开始存放所有参数，最后保留 非flag（non-flag）参数
+    exitOnError bool // does the program exit if there's an error?
+    errorHandling ErrorHandling // 当解析出错时，处理错误的方式
+    output io.Writer // nil means stderr; use out() accessor}
+</pre>
+	</p>
+	<p>FlagSet的所有操作都跟直接flag.一样，除了Parse这里需要手动处理，传入os.Args[1:]，为了知道os.Args是啥，我打印了一下,其实除了[0]是函数目录，后面的都是未经过解析的参数</p>
+	<p>那为什么要使用FlagSet呢？一个问题就是上面我输入了错误的参数后，直接退出了exit status 2,我想让他报错就好，不要退出,那我创建FlagSet的时候其实可以指定：
+<pre class="codepre">
+f := flag.NewFlagSet("集的名字", flag.ContinueOnError)
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=0 -b=asdasd -asdasd
+flag provided but not defined: -asdasd
+Usage of 集的名字:
+  -a int
+    	输入一个int (default 123)
+  -b string
+    	输入一个String (default "默认b")
+[/tmp/go-build637919440/b001/exe/test -a=0 -b=asdasd -asdasd]
+0 asdasd
+</pre>
+	</p>
+	<p>我指定了解析错误后的处理方式为flag.ContinueOnError，也就是继续，那虽然报错了，但还是显示了正确的解析结果：0 asdasd</p>
+	<p>这个处理方式有三种，都为字面意思:flag.ContinueOnError,flag.ExitOnErr,flag.PanicOnError</p>
+	<p>那基本用法已经介绍完了，还有几个小问题</p>
+	<p>注册参数那里，既然有flag.Int和flag.String那就说明也有其他的类型，比如flag.Bool,flag.Uint64等等。</p>
+	<p>还有就是有对应的传引用的注册方法，比如Int对应IntVar,String对应StringVal。其中有一个特殊的：flag.Var(value Value, name string, usage string)这样的一个方法。让我们想起了之前flag结构体中有个Value类型。那配合这个就可以实现自定义的参数解析</p>
+	<p>下面是一个例子,我把自定义类型myParm1实现了Set和String方法，所以他就是一个flag.Value接口
+package main
+
+import (
+        "flag"
+        "fmt"
+        "strings"
+)
+
+type myParm1 struct {
+        names []string
+}
+
+func (m *myParm1) Set(s string) error { //这个Set函数就是字符串储存的参数赋值给s了，那我要怎么解析这个s，我这里就是按逗号分割开然后储存到names里面
+        m.names = strings.Split(s, ",")
+        return nil
+}
+func (m *myParm1) String() string {     //定义转String的方法
+        res := ""
+        for _, a := range m.names {
+                res += "名字："
+                res += a
+        }
+        return res
+}
+
+func main() {
+        a := myParm1{}
+        flag.Var(&ampa, "a", "我定义的储存多个名字的结构体")
+        flag.Parse()
+        fmt.Println(a)
+}
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=tom,amy,sheldon
+{[tom amy sheldon]}
+	</p>
+	<p>可以看到成功实现了自定义的参数解析</p>
+	<p>如果想要便利flag怎么办？
+<pre class="codepre">
+package main
+
+import (
+        "flag"
+        "fmt"
+)
+
+func main() {
+        a := flag.Int("a", 123, "a是光")
+        b := flag.Int("b", 456, "b是电")
+        flag.Parse()
+        fmt.Println(*a, *b)
+        flag.Visit(func(n *flag.Flag) {
+                fmt.Println(n)
+        })
+}
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=1 -b=2
+1 2
+&amp{a a是光 1 123}
+&amp{b b是电 2 456}
+</pre>
+	</p>
+	<p>成功按照字典序遍历，就是说Visit会对每一个flag调用传进去的那个函数fn func(*Flag)</p>
+	<p>参数解析支持四种格式：
+<pre class="codepre">
+package main
+
+import (
+        "flag"
+        "fmt"
+)
+
+func main() {
+        a := flag.Int("a", 123, "a是光")
+        b := flag.Int("b", 456, "b是电")
+        c := flag.Int("c", 789, "c是唯一的神话")
+        d := flag.Int("d", 101112, "想不出来了")
+        flag.Parse()
+        fmt.Println(*a, *b, *c, *d)
+}
+~/J/v/p/n/G/Go标准库 ❯❯❯ go run test.go -a=1 -b 2 --c 3 --d=4
+1 2 3 4
+</pre>
+	</p>
+</body>
+</html>

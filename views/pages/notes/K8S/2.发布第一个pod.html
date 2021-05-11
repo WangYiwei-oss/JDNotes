@@ -1,0 +1,46 @@
+<!--K8S-->
+<!--Kubernetes基础-->
+<!--1-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>发布第一个pod</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>发布第一个pod</h1>
+	<p>k8s基本的发布流程是由master发布到随机一个node上面运行。</p>
+	<p>所以，发布的任务是要写在master上面的</p>
+	<p>通过.yaml的方式来建立一个pod，这里选择建立一个nginx服务来测试，因为nginx服务虽小但五脏俱全</p>
+<pre class="codepre">
+文件是./nginx.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+ name: nginx
+ label:
+  name:nginx
+spec:
+ containers:
+ - name: nginx
+   image: nginx:alpine
+   ports:
+   - containerPort: 80
+</pre>
+<p>在发布pod前可以先去node里面测试一下docker pull能不能通</p>
+<p>运行docker pull nginx:alpine</p>
+<p>测试成功后去master运行</p>
+<pre class="codepre">
+kubectl create -f nginx.yaml
+然后等一会
+kubectl get pods
+应该可以看到status是running
+kubectl get pods -o wide
+就可以看到服务的ip地址
+就可以(我的)
+curl 10.36.0.1
+就可以看到nginx服务器返回的内容啦
+</pre>
+</body>
+</html>

@@ -96,7 +96,7 @@ func ScanAllNotes(dir string) *[]Note {
 func ScanAllNotesToMysql(dir string) {
 	ns := ScanAllNotes(dir)
 	for _, n := range *ns {
-		utils.Db.Exec("INSERT INTO notes(id,title,filepath,firstclass,Secondclass)VALUES(?,?,?,?,?)", n.Id, n.Title, n.Filepath, n.Firstclass, n.Secondclass)
+		utils.Db.Exec("INSERT INTO notes(id,title,filepath,firstclass,secondclass)VALUES(?,?,?,?,?)", n.Id, n.Title, n.Filepath, n.Firstclass, n.Secondclass)
 	}
 }
 

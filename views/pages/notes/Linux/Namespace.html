@@ -1,0 +1,241 @@
+<!--Linux-->
+<!--Kernel-->
+<!--1-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Namespace</title>
+        <link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Namespace</h1>
+	<p>Linux Namespace是Kernel的一个功能，它可以隔离一系列的系统资源，比如PID、UserID、Network等，也可以在一些资源上，将进程隔离起来，这些资源包括进程树、网络接口、挂载点等</p>
+	<p>当前Linux一共实现了六种不同类型的Namespace</p>
+	<table>
+		<thead>
+		<tr>
+			<td>Namespace类型</td>
+			<td>系统调用参数</td>
+			<td>内核版本</td>
+		</tr>
+		</thead>
+		<tr>
+			<td>Mount Namespace</td>
+			<td>CLONE_NEWNS</td>
+			<td>2.4.19</td>
+		</tr>
+		<tr>
+			<td>UTS Namespace</td>
+			<td>CLONE_NEWUTS</td>
+			<td>2.6.19</td>
+		</tr>
+		<tr>
+			<td>IPC Namespace</td>
+			<td>CLONE_NEWIPC</td>
+			<td>2.6.19</td>
+		</tr>
+		<tr>
+			<td>PID Namespace</td>
+			<td>CLONE_NEWPID</td>
+			<td>2.6.24</td>
+		</tr>
+		<tr>
+			<td>Network Namespace</td>
+			<td>CLONE_NEWNET</td>
+			<td>2.6.29</td>
+		</tr>
+		<tr>
+			<td>User Namespace</td>
+			<td>CLONE_NEWUSER</td>
+			<td>3.8</td>
+		</tr>
+	</table>
+	<p>Namespace的API主要使用三个系统调用。</p>
+	<ul>
+		<li>clone()创建新进程。根据系统调用参数来判断哪些类型的Namespace被创建，而且它们的子进程也会被包含到这些Namespace中</li>
+		<li>unshare()将进程移出某个Namespace</li>
+		<li>setns()将进程加入到Namespace中</li>
+	</ul>
+	<h2>1. UTS Namespace</h2>
+	<p>UTS Namespace主要用来隔离nodename和domainname两个系统标识。在UTS Namespace里面，每个Namespace允许有自己的hostname</p>
+	<p>具体是隔离当前容器的系统，版本，Hostname，等</p>
+	<h3>1.1 用Go语言创建UTS Namespace</h3>
+	<p>
+<pre class="codepre">
+package main
+
+import (
+        "fmt"
+        "os"
+        "os/exec"
+        "syscall"
+)
+
+func main() {
+        cmd := exec.Command("sh")               //运行一个程序，返回一个Cmd*，用于对参数执行的程序进行设置，方便后面再run，返回的Cmd只设定了Path和Args两个参数
+        cmd.SysProcAttr = &ampsyscall.SysProcAttr{ //保管可选的，各操作系统特定的sys执行属性
+                Cloneflags: syscall.CLONE_NEWUTS, //linux下的clone calls,这里通过系统调用参数CLONE_NEWUTS，创建一个UTS Namespace
+        }
+        cmd.Stdin = os.Stdin
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr            //指定进程的Stdin,Stdout,Stderr，为os.Stdin而os.Stdin是指向了标准输入的文件描述符,对于linux是/dev/stdin文件
+        if err := cmd.Run(); err != nil { //执行cmd设置的程序
+                fmt.Println(err)
+        }
+}
+</pre>
+	</p>
+	<h3>1.2 验证</h3>
+	<p>分析上述的程序，将会在一个新的UTS Namespace下，开启一个shell，那么我们应该可以追踪到程序的执行情况，并且看到隔离主机名的效果</p>
+	<p>首先先不要运行程序，先查看一下本机的PID信息，以及hostname</p>
+	<p>通过指令echo $fish_pid需要说明一下我用的终端是fish，如果用的是sh的话，可以把指令改为echo $$</p>
+	<p>看到我当前shell的PID为1920</p>
+	<p>那么查看一下当前shell的进程树</p>
+	<pre class="codepre">
+~/J/v/p/n/Linux ❯❯❯ pstree -p | grep 1920
+           |-sh(1914)---alacritty(1915)-+-fish(1920)-+-grep(6412)
+	</pre>
+	<p>可以看到我的运行于PID=1920的fish终端</p>
+	<p>再查看一下现在的hostname</p>
+	<pre class="codepre">
+~/J/v/p/n/Linux ❯❯❯ hostname
+wangyiwei-Legion-Y7000P-2019
+	</pre>
+	<p>再看一下当前UTS Namespace</p>
+	<pre class="codepre">
+~/J/v/p/n/Linux ❯❯❯ readlink /proc/1920/ns/uts
+uts:[4026531838]
+	</pre>
+	<p>然后运行程序，再查看上述的内容</p>
+	<pre class="codepre">
+# echo $$
+7076
+看到PID变了，这是因为进入了另一个进程
+# pstree -p | grep 7076
+           |-sh(1914)---alacritty(1915)-+-fish(1920)---sudo(6952)---go(6965)-+-test(7072)-+-sh(7076)-+-grep(7098)
+看进程树发现现在的运行于7072的sh进程的爸是go，go的爸是fish终端
+# hostname -b lalala
+# hostname
+lalala
+这里更改了hostname，别忘了再去主机验证一下，由于隔离了，所以主机hostname应该不会变
+# readlink /proc/7076/ns/uts
+uts:[4026533077]
+看到uts改变了
+	</pre>
+	<h2>2. IPC Namespace</h2>
+	<p>IPC Namespace用来隔离System V IPC和POSIX message queues,简单来说就是进程间消息队列方式通信的隔离</p>
+	<h3>2.1 用Go语言创建IPC Namespace</h3>
+	<p>与上面的代码仅有一点点的改动
+<pre class="codepre">
+Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC,
+</pre>
+	</p>
+	<h3>2.2验证</h3>
+	<p>开启两个终端，分别在其中运行程序</p>
+	<p>然后在其中一个进程里面创建一条消息</p>
+	<pre class="codepre">
+# ipcmk -Q
+消息队列 id：0
+	</pre>
+	<p>然后查看两个终端里面的消息队列</p>
+	<pre class="codepre">
+# ipcs -q
+
+--------- 消息队列 -----------
+键        msqid      拥有者  权限     已用字节数 消息
+0xd49a5bfe 0          root       644        0            0
+# ipcs -q
+
+--------- 消息队列 -----------
+键        msqid      拥有者  权限     已用字节数 消息
+可以看到创建的那个有一条消息，但另一个则由于隔离，没有消息
+	</pre>
+	<h2>3. PID Namespace</h2>
+	<p>用来隔离进程ID的</p>
+	<p>上面的程序稍微改动</p>
+	<pre class="codepre">
+Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID,
+	</pre>
+	<h3>3.1 验证</h3>
+	<p>先查看终端的PID
+<pre class="codepre">
+~/J/v/p/n/Linux ❯❯❯ echo $fish_pid
+11585
+</pre>
+	</p>
+	<p>运行程序，并查看PID
+<pre class="codepre">
+$ echo $$
+1
+</pre>
+	</p>
+	<p>程序中的当前PID居然变成1了，打开另一个终端，再查看一下程序真正的PID
+<pre class="codepre">
+~ ❯❯❯ pstree -p | grep 11585
+           |-sh(11579)---alacritty(11580)-+-fish(11585)---sudo(20833)---go(20834)-+-test(20941)-+-sh(20946)
+</pre>
+	</p>
+	<p>发现程序真正的PID应该是20946，怎么确定呢？运行sudo kill -9 20946发现确实可以结束sh的程序</p>
+	<h2>4. Mount Namespace</h2>
+	<p>Mount Namespace用来隔离各个进程看到的挂载点视图。在Mount Namespace中调用mount()和umount()仅仅只会影响到当前Namespace内的文件系统</p>
+	<p>再稍微改动上面的代码</p>
+<pre class="codepre">
+Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWNS,
+</pre>
+	<p>就不演示了</p>
+	<h2>5. User Namespace</h2>
+	<p>主要用来隔离用户的用户组ID。比较常用的是在宿主机上以一个非root用户运行创建一个User Namespace，然后在User Namespace里面却映射成root用户。这个root用户仅在User Namespace中有root权限</p>
+	<p>再稍微改动上面的代码</p>
+	<pre class="codepre">
+Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWNS | syscall.CLONE_NEWUSER,
+
+	</pre>
+	<h3>5.1 验证</h3>
+	<p>宿主机上查看自己的用户组</p>
+	<pre class="codepre">
+~/J/v/p/n/Linux ❯❯❯ id
+用户id=1000(wangyiwei) 组id=1000(wangyiwei) 组=1000(wangyiwei),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),120(lpadmin),131(lxd),132(sambashare),998(docker)
+
+	</pre>
+	<p>运行程序，再查看自己的用户组</p>
+	<pre class="codepre">
+$ id
+用户id=65534(nobody) 组id=65534(nogroup) 组=65534(nogroup)
+	</pre>
+	<h2>6. Network Namespace</h2>
+	<p>Network Namespace是用来隔离网络设备、IP地址端口等网络栈的Namespace。Network Namespace可以让每个容器拥有自己的虚拟的网络设备，而且里面的应用可以绑定到自己的端口，每个Namespace内的端口都不会互相冲突。在宿主机上搭建网桥后，就能很方便地实现容器之间的通信，而且不同容器上的应用可以使用相同的端口</p>
+	<p>还是稍微改一改上面的代码</p>
+	<pre class="codepre">
+Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWNS | syscall.CLONE_NEWUSER | syscall.CLONE_NEWNET,
+	</pre>
+	<h3>6.1 验证</h3>
+	<p>先查看宿主机上的网络设备</p>
+	<pre class="codepre">
+~/J/v/p/n/Linux ❯❯❯ ifconfig
+docker0: flags=4099&ltUP,BROADCAST,MULTICAST&gt  mtu 1500
+        inet 172.17.0.1  netmask 255.255.0.0  broadcast 172.17.255.255
+        ether 02:42:c3:a4:6d:cb  txqueuelen 0  (以太网)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+docker_gwbridge: flags=4163&ltUP,BROADCAST,RUNNING,MULTICAST&gt  mtu 1500
+        inet 172.18.0.1  netmask 255.255.0.0  broadcast 172.18.255.255
+        inet6 fe80::42:67ff:fec6:9d9  prefixlen 64  scopeid 0x20<link>
+        ether 02:42:67:c6:09:d9  txqueuelen 0  (以太网)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 45  bytes 6088 (6.0 KB)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+下面还有好多
+	</pre>
+	<p>再运行程序，然后再查看程序内的网络设备
+<pre class="codepre">
+$ ifconfig
+$
+</pre>
+	</p>
+	<p>发现没有网络设备，说明隔离了</p>
+</body>
+</html>

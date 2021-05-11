@@ -1,0 +1,140 @@
+<!--K8S-->
+<!--Kubernetes基础-->
+<!--1-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Pod,RC,Service</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<p>在K8s中，Pod,RC,Service以及Node等都可以被看作是资源对象，也就是可以被操作的CRUD(增删改查)的。就像是在数据库中存放用户信息一样，K8s将这些不同的资源对象存放在etcd库中(还记得安装时拉取了一个etcd)。K8s会对比etcd库中存储的资源对象的期望状态和运行中的实际状态的差异来实现自动控制和纠错。这样K8s就可以通过修改etcd库来实现对运行中的资源对象进行修改</p>
+	<p>在k8s中，所有的资源对象都可以用YAML或JSON来描述</p>
+	<p>然后k8s就可以通过:</p>
+	<ul>
+		<li>kubectl create -f 文件名.yaml  来创建资源对象（增）</li>
+		<li>kubectl get 资源对象名  来查看资源对象（查）</li>
+		<li>kubectl delete 资源对象名  来删除资源对象（删）</li>
+		<li>"改"回头再说</li>
+	</ul>
+	<p>先笼统地说一下Pod，RC，Sevice的关系，Pod是用来运行具体的服务的，RC是用来自动化管理Pod的，Sevice是用来归纳Pod然后与外界对接的</p>
+	<h1>1.Pod</h1>
+	<p>Pod其实就是运行在Node上面，用来容纳一堆容器的地方</p>
+	<p>如果想要运行一个Pod，其实有好多种方法，先用一个最不自动的方法。直接创建一个描述Pod资源对象的.yaml文件，然后创建</p>
+	<p>在master机上写：</p>
+	<p>写一个最简单的.yaml，这里一定要注意空格不要错</p>
+	<pre class="codepre">
+apiVersion: v1	#就是说这个.yaml用哪套api解析
+kind: Pod	#所有资源对象都能用.yaml创建，那不得告诉到底创建啥
+metadata: 	#所有资源对象都有metadata，用来指定资源对象的名字之类的东西
+ name: nginx	#这里可以用对象来理解，这个name也就是metadata.name=nginx。
+ labels:	#metadata.labels就是POd的标签，后面再介绍是干嘛的，其实就是用来筛选的标签
+  woyaopang: nginx	#标签可以指定无数个，为键:值对的形式，那我就随便取一个
+spec:	#Pod中容器的详细定义
+ containers:	#容器的类型是containers
+ - name: nginx	#此Pod中第一个容器的名字叫nginx，当然可以定义多个容器，毕竟Pod就是用来存放多个容器的，只需多加几个name就好
+   image: nginx:alpine	#容器的镜像的名字，会从docker的默认仓库里面拉取
+   #以上的除了labels都是必须要定义的，由于nginx是网络服务，所以需要指定一个端口
+   ports:
+   - containerPort: 80	#制定暴露80端口
+	</pre>
+	<p>然后就可以通过kubectl create -f nginx.yaml来创建pod资源对象啦，并查看结果</p>
+	<img src="static/img/podcreate1.png" alt="">
+	<p>通过命令kubectl get nginx -o wide可以看到更多的信息</p>
+	<img src="static/img/getpodowide.png" alt="">
+	<p>可以看到这个Pod的IP地址，注意这个IP地址是称为Pod的IP的仅在K8s内部才能访问的虚拟IP</p>
+	<p>我们在master上面执行curl 10.40.0.0可以得到经典的nginx服务的欢迎画面，但如果在别的地方是curl不通的</p>
+	<img src="static/img/curlpodip.png" alt="">
+	<p>pod信息里面我们还可以看到Pod运行于哪个Node，我这里是运行在node1上面的，所以我去node1里面看一看，运行docker ps</p>
+	<img src="static/img/node1dockerps.png" alt="">
+	<p>可以看到第一条就是我们的nginx服务的容器，第二条是一个叫pause的容器，这里就要提到Pod储存容器的方式。</p>
+	<p>每一个Pod都会运行一个名为pause的根容器，这个pause不容易死亡，所以k8s会通过pause容器的状态来判断Pod整体是否死亡。并且pause上面储存着Pod的IP地址和共享volume(共享储存空间)。这样其他的容器在共享IP和Volume上就会变得很方便</p>
+	<p>再回到node1的docker ps，发现下面似乎还运行了两个Pod，应该是k8s自动运行的管理用的Pod</p>
+	<h1>2.RC</h1>
+	<p>先回到master</p>
+	<p>上面说的启动Pod的方式，是一种最不自动的启动方式，因为我们如果要启动100个Pod呢？总不能create 100次。而且万一一个Pod挂了，总不能半夜三点起来create一下。</p>
+	<p>这时就要用到RC</p>
+	<p>RC全名Replication Controller。居然就是一个复制控制器。主要就是定义了某种Pod的预期数量</p>
+	<p>既然RC也是资源对象，那也可以用.yaml创建</p>
+	<p><pre class="codepre">
+apiVersion: v1
+kind: ReplicationController
+metadata: 
+ name: nginx-rc	#RC的名字
+spec:
+ <font style="font-weight:bold">replicas: 5	#这里就是指定了副本数量为5个
+ selector:</font>
+  <font style="color:red">woyaopang: nginx</font>	#还记得前面创建Pod时指定的Label吗。这个selector就是选择器，用来选择label的。这个RC只会作用在选择成功的Pod上
+ template:	#下面其实是RC发现副本不够或者Pod损坏需要重建时，要重建什么样子的Pod。这里选择创建跟之前一毛一样的Pod
+  metadata:
+   labels:
+    <font style="color:red">woyaopang:nginx</font>
+  spec:
+   containers:
+   - name: nginx
+     image: nginx:alpine
+     ports:
+     - containerPort: 80
+	</pre></p>
+	<p>然后通过命令kubectl create -f rc_nginx.yaml来创建这个RC，并查看</p>
+	<img src="static/img/getrc1.png" alt="">
+	<p>可以看到显示了目标副本数，已创建副本数和准备妥当的副本数</p>
+	<p>然后再去看Pod</p>
+	<img src="static/img/getpods1.png" alt="">
+	<p>可以看到k8s完成了我们想运行5个Pod的策略，去curl任意哪个IP都是可以通的</p>
+	<p>副本数量是可以随时该的，比如网站没人用了要倒闭了，就让Pod少点吧</p>
+	<p>kubectl scale rc rc-nginx --replicas=2</p>
+	<img src="static/img/scalerc1.png" alt="">
+	<p>这种自动化管理Pod的方式其实还有很多，并且RC已经过时了。现在都在用(应该)Deployment和Replica Set来编排容器，这俩与RC其实也很相似</p>
+	<h1>Service</h1>
+	<p>前面说到通过Kubectl get pods -o wide获取的Pod的IP是一个虚拟的IP地址，外部是访问不到的。那么想要在外部访问怎么办。</p>
+	<p>在微服务架构中，肯定是一大堆的服务在内部的网络中搞来搞去，但是最终总是要有一个接口来让用户访问的。这一个接口就是Service来定义的，这里也体现了Service打包Pod的作用。</p>
+	<p>对于我们目前这个nginx来说，其实不需要好几个pod，所以先将pod数量减少到1</p>
+	<p>kubectl scale rc rc-nginx --replicas=1</p>
+	<p>然后用过.yaml来创建一个Service来打包这个Pod</p>
+	<pre class="codepre">
+apiVersion: v1
+kind: Service
+metadata:
+ name: nginx-Service
+spec:
+ ports: 
+ - port: 9000	#Service打包的端口ClusterIP地址（不是暴露给外部的地址）
+ targetPort: 80	#Pod内提供服务的容器的端口，我们上面的rc里面写了port是80,所以这里也要是80
+ selector:	#又见选择器，把label是woyaopang:nginx的Pod打包
+  woyaopang:nginx
+	</pre>
+	<p>创建并查看结果kubectl create -f service_nginx.yaml</p>
+	<img src="static/img/createservice.png" alt="">
+	<p>可以看到创建了一个服务，并且给了一个ClusterIP和端口号，并且在master上面能curl通，但是，这时外面还是不能够访问这个IP地址的。这里做的其实只是把一大堆虚拟的Pod IP打包成了一个虚拟的ClusterIP。想要暴露给外部，需要修改上面的.yaml</p>
+	<p>虚拟IP的意思其实是没有一个物理主机（物理网卡）的IP是那个IP</p>
+	<p>先删除服务kubectl delete svc nginx-service</p>
+	<p>修改.yaml为
+<pre class="codepre">
+apiVersion: v1
+kind: Service
+metadata:
+ name: nginx-Service
+spec:
+ type: NodePort	#也就是说类型是Node机的Port
+ ports:
+ - port: 9000  
+   nodePort:31000	#指定Node机上暴露的端口
+ targetPort: 80
+ selector:
+  woyaopang:nginx
+</pre>
+	</p>
+	<p>创建这个service并查看结果</p>
+	<img src="static/img/createservicenodeport.png" alt="">
+	<p>可以看到TYPE成功变成了NodePort但是还是木有真实的物理IP啊，还是只有一个ClusterIP，仔细想一下，其实是有的，因为我们暴露的是node的IP。所以其实IP就是Node机的物理IP。</p>
+	<p>我去node1去，curl一下自己的31000端口</p>
+	<img src="static/img/curlziji.png" alt="">
+	<p>可以看到，成功！</p>
+	<p>此时按理说就可以在浏览器中打开nginx的网页了，但是别忘了，我们的Node是运行在虚拟机上的。所以还需要在vmware中暴露到主机，用ifconfig查看一下node机的ip地址。我的是192.168.247.101</p>
+	<p>在虚拟机上点edit-&gtviturl network edit-&gtNAT-&gtNAT Setting-&gtAdd-&gt自己填一下就行了</p>
+	<img src="static/img/vmware1.png" alt="">
+	<p>这样就可以在主机上通过浏览器访问nginx服务了</p>
+	<img src="static/img/chenggong1.png" alt="">
+</body>
+</html>

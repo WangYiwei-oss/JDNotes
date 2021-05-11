@@ -1,0 +1,219 @@
+<!--Linux-->
+<!--Kernel-->
+<!--1-->
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Control Groups</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
+</head>
+<body>
+	<h1>Cgroups</h1>
+	<p>Linux Cgroups(Control Groups)提供了对一组进程及将来子进程的资源限制、控制和统计能力，这些资源包括CPU、内存、存储、网络等。通过Cgroups，可以方便地限制某个进程的资源占用，并且可以实时地监控进程的监控和统计信息。</p>
+	<p>本质上说，Cgroups是内核附加在程序上的一系列钩子(hook)，通过程序运行时对资源的调度触发相应的钩子以达到资源追踪和限制的目的</p>
+	<p>Cgroups的主要目的是为了不同用户层面的资源管理提供一个统一化的接口。从单个任务的资源控制到操作系统层面的虚拟化，cgroups提供了四大功能</p>
+	<ul>
+		<li>资源限制</li>
+		<li>优先级分配</li>
+		<li>资源统计</li>
+		<li>任务控制</li>
+	</ul>
+	<h2>Cgroups中的三个组件</h2>
+	<ol>
+		<li>cgroup是对进程分组管理的一种机制，一个cgroup包含一组进程，并且可以在这个cgroup上增加Linux subsystem的各种参数配置，将一组进程和一组subsystem的系统参数关联起来</li>
+		<li>subsystem是一组资源控制的模块，一般包含如下几项
+		<ul>
+			<li>blkio设置对块设备（比如键盘）输入输出的访问控制</li>
+			<li>cpu设置cgroup中进程的CPU调度策略</li>
+			<li>cpuacct可以统计cgroup中进程的CPU占用</li>
+			<li>cpuset在多核机器上设置cgroup中进程可以使用的CPU和内存</li>
+			<li>devices控制cgroup中进程对设备的访问</li>
+			<li>freezer用于挂起(suspend)和恢复(resume)cgroup中的进程</li>
+			<li>memory用于控制cgroup中进程的内存占用</li>
+			<li>net_cls用于将cgroup中进程产生的网络包分类，以便Linux的tx(traffic controller)可以根据分类区分出来自某个cgroup的包并作限流或监控</li>
+			<li>net_prio设置cgroup中进程产生的网络流量的优先级</li>
+			<li>ns这个比较特殊，作用是使cgroup中的进程在新的Namespace中fork新进程(NEWNS)时，创建出一个新的cgroup，这个cgroup包含新的Namespace中的进程</li>
+		</ul>
+		每个subsystem会关联到定义了相应限制的cgroup上，并对这个cgroup中的进程做相应的限制和控制。查看本机Kernel支持的subsystem
+		<pre class="codepre">
+~/J/v/p/n/Linux ❯❯❯ lssubsys -a
+cpuset
+cpu,cpuacct
+blkio
+memory
+devices
+freezer
+net_cls,net_prio
+perf_event
+hugetlb
+pids
+rdma
+		</pre>
+		</li>
+		<li>hierarchy的功能是把一组cgroup串成一个树状结构，一个这样的树便是一个hierarchy，通过这种树状结构，Cgroups可以做到对各种限制的继承。</li>
+	</ol>
+	<h2>三个组件相互的关系</h2>
+	<ul>
+		<li>系统在创建了新的hierarchy之后，系统中所有的进程都会加入这个hierachy的cgroup根节点，这个cgroup根节点是hierarchy自动创建的，所有后面创建的cgroup都是这个cgroup根节点的子节点</li>
+		<li>一个subsystem只能附加到一个hierachy上面</li>
+		<li>一个hierarchy可以附加多个subsystem</li>
+		<li>一个进程可以作为多个cgroup的成员，但这些cgroup必须在不同的hierarchy中</li>
+		<li>一个进程fork出子进程时，子进程和父进程在同一个cgroup中，但也可以移动到其他cgroup中</li>
+	</ul>
+	<h2>通过Kernel接口配置Cgroups</h2>
+	<p>hierachy是一个树状结构，linux通过一个虚拟的树状文件系统来模拟这个树，使配置起来更加的直观</p>
+	<pre class="codepre">
+~/test ❯❯❯ mkdir cgroup-test	#创建一个hierarchy挂载点
+~/test ❯❯❯ sudo mount -t cgroup -o none,name=cgroup-test cgroup-test ./cgroup-test	#挂载一个cgroup
+[sudo] wangyiwei 的密码：
+~/test ❯❯❯ ls ./cgroup-test/
+cgroup.clone_children  cgroup.procs  cgroup.sane_behavior  notify_on_release  release_agent  tasks	#可以看到在挂载目录下生成了许多默认文件
+	</pre>
+	<p>cgroup-test就作为根cgroup，生成的文件就是根节点的配置文件</p>
+	<pre class="codepre">
+cat ./cgroup-test/cgroup.clone_children
+0
+cpuset会读取这个文件，如果设为1,子cgroup才会继承父cgroup的cpuset配置
+cat ./cgroup-test/cgroup.procs
+会出现一堆数字
+是当前节点cgroup中的进程组ID，现在的位置是在根节点，这个文件中会有系统中所有进程组的ID
+~/test ❯❯❯ cat ./cgroup-test/notify_on_release
+0
+~/test ❯❯❯ cat ./cgroup-test/release_agent
+
+这俩文件是一起使用的，notify_on_release标识当这个cgroup最后一个进程的时候是否执行了release_agent。而release_agent会是一个路径，通常用作进程退出后自动清理掉不再使用的cgroup。
+~/test ❯❯❯ cat ./cgroup-test/tasks
+会出现一堆数字
+是该cgroup下面的进程ID，如果把一个进程ID写到tasks文件中，便会将相应的进程加入到这个cgroup中。也就是可以对这个进程进行限制了。
+	</pre>
+	<p>在croup-test里面新建两个文件，然后查看文件夹的结构
+<pre class="codepre">
+~/t/cgroup-test ❯❯❯ sudo mkdir cgroup1
+~/t/cgroup-test ❯❯❯ sudo mkdir cgroup2
+~/t/cgroup-test ❯❯❯ tree
+.
+├── cgroup1
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup2
+│   ├── cgroup.clone_children
+│   ├── cgroup.procs
+│   ├── notify_on_release
+│   └── tasks
+├── cgroup.clone_children
+├── cgroup.procs
+├── cgroup.sane_behavior
+├── notify_on_release
+├── release_agent
+└── tasks
+
+2 directories, 14 files
+</pre>
+	</p>
+	<p>可以看到在cgroup的文件夹下面创建文件夹，系统会自动把它标记为cgroup</p>
+	<p>然后把一个进程添加到cgroup中去，还记得tasks文件吗，只需要把PID添加到tasks文件中就可以把相应的进程加入到这个cgroup中去了</p>
+	<pre class="codepre">
+~/t/cgroup-test ❯❯❯ cd cgroup1/
+~/t/c/cgroup1 ❯❯❯ echo $fish_pid
+25296
+~/t/c/cgroup1 ❯❯❯ sudo sh -c "echo $fish_pid &gt&gt tasks"
+	</pre>
+	<p>这样就可以了，查看一下tasks文件
+<pre class="codepre">
+~/t/c/cgroup1 ❯❯❯ cat tasks
+25296
+27649
+27652
+可以看到25296和两个其他进程被添加到文件里面了。
+~/t/c/cgroup1 ❯❯❯ cat /proc/25296/cgroup
+13:name=cgroup-test:/cgroup1
+12:cpuset:/
+11:memory:/user.slice/user-1000.slice/session-2.scope
+10:pids:/user.slice/user-1000.slice/session-2.scope
+9:perf_event:/
+8:blkio:/user.slice
+7:rdma:/
+6:hugetlb:/
+5:cpu,cpuacct:/user.slice
+4:freezer:/
+3:devices:/user.slice
+2:net_cls,net_prio:/~/t/c/cgroup1 ❯❯❯ cat /proc/25296/cgroup
+13:name=cgroup-test:/cgroup1
+12:cpuset:/
+11:memory:/user.slice/user-1000.slice/session-2.scope
+10:pids:/user.slice/user-1000.slice/session-2.scope
+9:perf_event:/
+8:blkio:/user.slice
+7:rdma:/
+6:hugetlb:/
+5:cpu,cpuacct:/user.slice
+4:freezer:/
+3:devices:/user.slice
+2:net_cls,net_prio:/
+1:name=systemd:/user.slice/user-1000.slice/session-2.scope
+0::/user.slice/user-1000.slice/session-2.scope
+1:name=systemd:/user.slice/user-1000.slice/session-2.scope
+0::/user.slice/user-1000.slice/session-2.scope
+通过查看proc文件夹，确定了25296进程确实被加入到了cgroup里面。
+</pre>
+	</p>
+	<p>然后就可以通过subsystem限制cgroup中进程的资源</p>
+	<p>
+<pre class="codepre">
+首先创建一个压力测试进程，让他占用200MB的内存。
+开启一个终端用top命令监控系统进程
+~/t/c/cgroup1 ❯❯❯ stress --vm-bytes 200m --vm-keep -m 1
+stress: info: [30057] dispatching hogs: 0 cpu, 0 io, 1 vm, 0 hdd
+查看top的结果
+ 进程号 USER      PR  NI    VIRT    RES    SHR
+  30058 wangyiw+  20   0  208668 204872    208 R
+</pre>
+	</p>
+	<p>
+<pre class="codepre">
+不太确定非root用户怎么完成资源的限制。所以先用root用户试一下
+~ ❯❯❯ mount | grep memory
+cgroup on /sys/fs/cgroup/memory type cgroup (rw,nosuid,nodev,noexec,relatime,memory)
+这里是找到了系统为memory创建的hierarchy的目录
+cd
+/sys/fs/cgroup/memory
+查看目录下的文件啊，发现包含了cgroup的文件，但多出来许多文件，那些文件就可以用来限制资源。
+不要改默认的，否则电脑系统岂不是被限制了资源
+新建一个节点
+mkdir test
+cd test
+/s/f/c/memory ❯❯❯ cat memory.limit_in_bytes
+9223372036854771712
+这里先看了一眼memory.limit_in_bytes本来的内容，应该是机器物理内存的大小
+不要忘了切换root用户
+sh -c "echo 100m" &gt memory.limit_in_bytes
+/s/f/c/m/test-limit-memory ❯❯❯ cat memory.limit_in_bytes
+104857600
+可以看到把数字给改了，也就限制了cgroup的内存占用。
+然后不要忘了把当前终端进程写入cgroup
+sh -c "echo $$" &lt tasks
+然后再运行上面的压力测试程序
+stress --vm-bytes 200m --vm-keep -m 1
+top查看结果，发现RES被限制了
+ 进程号 USER      PR  NI    VIRT    RES    SHR    %CPU  %MEM     TIME+ COMMAND
+  10118 root      20   0  208668 101084    272 D  52.5   0.6   0:07.67 stress
+</pre>
+	</p>
+	<h2>Docker是如何使用Cgroups的</h2>
+	<p>docker限制内存是在run的时候加上-m来达成的</p>
+	<pre class="codepre">
+我这里run一个ubuntu镜像。限制内存为128m
+~/J/v/p/n/Linux ❯❯❯ docker run -itd -m 128m ubuntu
+6d1363517c8beb3d6efa8b1585ab211207792b1d72ee055ed3432a11a68120c1
+然后进入memory下面，发现docker建立了目录，点进去看看
+cd /sys/fs/cgroup/memory/docker/6d1363517c8beb3d6efa8b1585ab211207792b1d72ee055ed3432a11a68120c1
+然后查看一下内存限制的文件
+cat memory.limit_in_bytes
+134217728
+发现正好是128m啊。因为128*1024*1024=134217728
+	</pre>
+	<p>也就是说，Docker也是通过系统的cgroup来限制资源的</p>
+</body>
+</html>

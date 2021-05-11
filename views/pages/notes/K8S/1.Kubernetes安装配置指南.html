@@ -1,12 +1,100 @@
 <!--K8S-->
-<!--Kubernetes的安装-->
+<!--Kubernetes基础-->
 <!--1-->
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title></title>
+	<title>K8s的安装</title>
+	<link rel="stylesheet" href="views/static/CSS/notes.css">
 </head>
 <body>
-	
+	<h1>安装master</h1>
+	<h2>准备工作</h2>
+	<p>
+<pre class="codepre">
+停防火墙
+systemctl stop firewalld &amp&amp systemctl disable firewalld &amp&amp setenforce 0
+
+禁用selinux 
+vim /etc/selinux/config
+改SELINUX=disabled
+
+修改防火墙规则，在最后添加
+vim /etc/sysctl.conf
+net.ipv4.ip_forward=1
+
+
+然后关闭交换空间的使用
+swapoff -a
+然后禁止swap交换
+vim /etc/fstab
+把带swap那一行注释掉，就是在最前面加上#
+
+然后配置一下国内的kubernetes的yum源。翻墙选手忽略
+vim /etc/yum.repos.d/kubernetes.repo
+输入以下内容:
+[kubernetes]
+name=Kubernetes Repository
+baseurl=https://mirrors,aliyun.com/kubernetes/yum/repos/kubernetes-el7-x86_64/
+enabled=1
+gpgcheck=0
+</pre>
+	</p>
+	<h2>安装docker</h2>
+	<p>yum install docker</p>
+	<h2>安装kubelet</h2>
+	<p>yum install -y kubelet kubeadm kubect1 --disableexcludes=kubernetes</p>
+	<p>然后启动docker和kubelet</p>
+	<pre class="codepre">
+systemctl enable docker &amp&amp systemctl start docker
+systemctl enable kubelet &amp&amp systemctl start kubelet
+	</pre>
+	<h2>取得默认的初始化文件</h2>
+	<pre class="codepre">
+kubeadm config print init-defaults &gt init.default.yaml
+	</pre>
+	<h2>拉取需要的Docker镜像</h2>
+	<p>直接运行kubeadm config images pull --config=init.default.yaml的话会报错，因为连不到外网。这里就是通过手动拉取国内阿里源的镜像然后在改名字的方法</p>
+	<pre class="codepre">
+首先通过
+kubeadm config images list
+比如我的
+<img src="static/img/kubeadmconfiglist.png" alt="">
+查看所需要的镜像，然后去阿里的镜像仓库拉取
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-apiserver:v1.20.5
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-controller-manager:v1.20.5
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-scheduler:v1.20.5
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy:v1.20.5
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.2
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.13-0
+docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:1.7.0
+拉取好镜像后，使用docker tag 镜像id 新名字
+把镜像都重新命名为前面仓库名为k8s.gcr.io的名字
+<img src="static/img/k8sgcrio.png" alt="">
+然后就可以运行
+kubeadm init
+来安装master
+安装成功后显示安装成功信息
+最后两行。需要记录下来。
+我的是：
+kubeadm join 192.168.247.100:6443 --token s281ww.tpwcdh05cp326kkp \
+	--discovery-token-ca-cert-hash 4c158fac3b7c70d67d227a9b8fddd3eed280e58a024ea338ef6e7186567c2bb6
+	</pre>
+	<h1>安装Node</h1>
+	<p>node机同样与master机联盟的步骤相同，即准备工作，安docker和kubelet以及拉去docker镜像</p>
+	<pre class="codepre">
+首先给node机改名字
+hostnamectl --static set-hostname node1
+hostname $hostname
+然后运行上面记录下来的那两行代码
+kubeadm join 192.168.247.100:6443 --token s281ww.tpwcdh05cp326kkp \
+        --discovery-token-ca-cert-hash 4c158fac3b7c70d67d227a9b8fddd3eed280e58a024ea338ef6e7186567c2bb6
+就可以join成功，成功后看到提示信息has joined
+此时回到master机子通过命令kubectl get nodes就可以看到节点的信息了
+这时的status仍然是NotReady。这是因为还没有配置网络
+	</pre>
+	<h1>配置网络</h1>
+	<p>直接在master上运行kubectl apply -f "https://cloud,weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"</p>
+	<p>然后要稍等一会，再去get nodes，就会发现全部都ready了</p>
 </body>
 </html>
